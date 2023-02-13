@@ -5,43 +5,52 @@ import pandas as pd
 import seaborn as sns
 from sklearn import metrics
 from pymatreader import read_mat
-path1 = '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X24208_ses-1_task-coilorientation_run001_emg.mat'
-#path1 = '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X01666_ses-1_task-coilorientation_emg.mat'
-#path1 = '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X02299_ses-1_task-coilorientation_emg.mat'
-#path1 = '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X03004_ses-1_task-coilorientation_emg.mat'
-#key = 'X02299_Coil_Orient000_1_wave_data'
-data = read_mat(path1)
-key = list(data.keys())[3]
+import os
+path ="/mnt/projects/USS_MEP/COIL_ORIENTATION"
+#we shall store all the file names in this list
+filelist = []
 
+for root, dirs, files in os.walk(path):
+  for file in files:
+        #append the file name to the list
+    filelist.append(os.path.join(root,file))
+  #print(f"filelist {filelist}")
+#Removes all the files that Lasse havent checked yet, so only using files with sub.
+filelist = [ x for x in filelist if "sub" in x ]
+"""
+X = np.empty((20000,160))
+for path in filelist:
+  data = read_mat(path)
+  key = list(data.keys())[3]
 
+  X_temp = np.transpose(data[key]['values'][:,0])
+  y_temp = data[key]['frameinfo']['state']
+  X_sliced = []
+  for i in range(len(X_temp)):
+    X_sliced.append(X_temp[i,:][10040:10200])
+  #print(path)
+  #np.concatenate((X,X_sliced), axis = 0)
+print(len(X))
+  #getdata(i, key)
 #matlab_data = sio.loadmat('/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X01666_ses-1_task-coilorientation_emg.mat',verify_compressed_data_integrity = False)
 #matlab_data = matlab_data['x01666_coilorient000_1_wave_data']
 
-
-def getdata(path, key):
-  import os
-  path ="C:/mnt/projects/USS_MEP/COIL_ORIENTATION/"
-  #we shall store all the file names in this list
-  filelist = []
-
-  for root, dirs, files in os.walk(path):
-    for file in files:
-          #append the file name to the list
-      filelist.append(os.path.join(root,file))
-  print(filelist)
-
-
-  data = read_mat(path1)
+"""
+def getdata(path):
+  data = read_mat(path)
+  key = list(data.keys())[3]
   #plt.plot(data[key]['values'][:,0].mean(-1))
   X = np.transpose(data[key]['values'][:,0])#.mean(-1)
   y = data[key]['frameinfo']['state']
   X_sliced = []
-  print(len(X[:,0]))
+
+  x_start, x_end = int(len(X[0,:])/2+20) , int(len(X[0,:])/2+100)
   for i in range(len(X)):
-    X_sliced.append(X[i,:][10040:10200])
+    X_sliced.append(X[i,:][x_start:x_end])
     #print(X_sliced)
-  plt.plot(np.array(np.transpose(X_sliced)))
-  #plt.show()
+  X_sliced = np.transpose(np.array(X_sliced))
+  plt.plot(X_sliced)
+  plt.show()
   return X,y, X_sliced
 
 
@@ -98,9 +107,10 @@ def confmat(y_test, predictions):
 
 
 ####
-X,y, X_sliced = getdata(path1, key)
+path = '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X36523_ses-1_task-coilorientation_emg.mat'
+X,y, X_sliced = getdata(path)
 #plt.plot(data[key]['values'][:,0].mean(-1))
 
-score, x_train, x_test, y_train, y_test, predictions = logregr(X_sliced,y)
-print(f"score: {score}")
+#score, x_train, x_test, y_train, y_test, predictions = logregr(X_sliced,y)
+#print(f"score: {score}")
 #confmat(y_test, predictions)
