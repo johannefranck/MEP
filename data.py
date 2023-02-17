@@ -46,8 +46,8 @@ def get_all_data(filelist):
         data = read_mat(path)
         key = list(data.keys())[3]
 
-        X_temp = get_one_data(path)
-        np.append(X, [X_temp] )
+        X, y, X_sliced = get_one_data(path)
+        np.append(X_sliced, [X_temp])
         """
         X_temp = np.transpose(data[key]['values'][:,0])
         y_temp = data[key]['frameinfo']['state']
