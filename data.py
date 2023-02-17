@@ -28,42 +28,37 @@ def get_one_data(path):
   data = read_mat(path)
   key = list(data.keys())[3]
 
-  X = np.transpose(data[key]['values'][:,0])
+  X_raw = np.transpose(data[key]['values'][:,0])
   y = data[key]['frameinfo']['state']
   X_sliced = []
     #Vurder hvornår vi skal slice fra og til. 
-  x_start, x_end = int(len(X[0,:])/2+20) , int(len(X[0,:])/2+200)
-  for i in range(len(X)):
-    X_sliced.append(X[i,:][x_start:x_end])
+  x_start, x_end = int(len(X_raw[0,:])/2+20) , int(len(X_raw[0,:])/2+200)
+  for i in range(len(X_raw)):
+    X_sliced.append(X_raw[i,:][x_start:x_end])
   X_sliced = np.transpose(np.array(X_sliced))
-  #plt.plot(X_sliced)
-  #plt.show()
-  return X,y, X_sliced
+
+  X = X_sliced
+  return X_raw,y, X
 
 def get_all_data(filelist):
-    X = np.empty((20000,160))
-    for path in filelist:
-        data = read_mat(path)
-        key = list(data.keys())[3]
 
-        X, y, X_sliced = get_one_data(path)
-        np.append(X_sliced, [X_temp])
-        """
-        X_temp = np.transpose(data[key]['values'][:,0])
-        y_temp = data[key]['frameinfo']['state']
-        X_sliced = []
-        x_start, x_end = int(len(X[0,:])/2+20) , int(len(X[0,:])/2+200)
-        for i in range(len(X_temp)):
-            X.append(X_temp[i,:][x_start:x_end])
-        #print(path)
-        #np.concatenate((X,X_sliced), axis = 0)
-        print(len(X))
-        #getdata(i, key)
-        """
-        return X
+ 
+    X_raw, y, X_first = get_one_data(filelist[0])
+    filelist.pop(0)
+
+    for path in filelist:
+        #data = read_mat(path)
+        #key = list(data.keys())[3]
+
+        X_raw, y, X = get_one_data(path) #slice each subject
+        X_first = np.concatenate((X, X_first),axis=1)
+
+    X = X_first
+    return X
     
 
 
 filelist = get_all_paths(main_path)
 X = get_all_data(filelist)
 print(X)
+#print(X)
