@@ -6,14 +6,14 @@ import seaborn as sns
 from sklearn import metrics
 from pymatreader import read_mat
 import os
-from scipy.interpolate import interp1d
+from scipy import signal
 
 #path to all the files
 main_path ="/mnt/projects/USS_MEP/COIL_ORIENTATION"
 path_x01666 = "/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X01666_ses-1_task-coilorientation_emg.mat"
 
-# Outputs Filelist containing all files
 def get_all_paths(main_path):
+    # Outputs Filelist containing all files
     #Store all the file names in this list
     filelist = []
 
@@ -26,62 +26,89 @@ def get_all_paths(main_path):
     filelist = [ x for x in filelist if "sub" in x ]
     return filelist
 
-from scipy import signal
-# Downsample function
-def downsample(array, npts):
-    #interpolated = interp1d(np.arange(len(array)), array, axis = 0, fill_value = 'extrapolate')
-    #downsampled = interpolated(np.linspace(0, len(array), npts))
-    downsampled = signal.resample(array, npts)
-    return downsampled
 
-# Outputs one nd array in format (180, repetitions)
+def unique_groups(main_path, filelist):
+    # Initialize a list to store the unique subjects (for train test split)
+    groups = []
+    i = 0
+    for k, file in enumerate(filelist):
+        subject = file[43:49]
+
+        if subject in filelist[k-1]:
+            i = i - 1
+
+        data = read_mat(file)
+        key = list(data.keys())[3]
+
+        reps = data[key]["frames"]
+        groups.extend([i]*reps)
+        i += 1
+    return groups
+
+groups = unique_groups(main_path, filelist)
+print(groups)
+print(len(groups))
+
+def downsample(array, npts):
+  # Downsample function
+  downsampled = signal.resample(array, npts)
+  return downsampled
+
 def get_one_data(path):
+  # Outputs one nd array in format (180, repetitions for one subject)
   data = read_mat(path)
   key = list(data.keys())[3]
 
-  X_raw = np.transpose(data[key]['values'][:,0])
+  X_raw = data[key]['values'][:,0]
   y = data[key]['frameinfo']['state']
-  
+  X_raw, y = delete_group456(X_raw,y)
+
   # downsample
-  
-  if len(X_raw[0])==20000:
-    downsampled_X_raw = X_raw
-    for i in range(len(X_raw)):
-      downsampled_X_raw[i] = downsample(X_raw[i], 8000)
+  if len(X_raw)==20000:
+    downsampled_X_raw = []
+    for i in range(len(X_raw[0])):
+      downsampled_X_raw.append(downsample(np.transpose(X_raw)[i], 8000).tolist())
+    downsampled_X_raw = np.transpose(downsampled_X_raw)
   else:
     downsampled_X_raw = X_raw
-  #plt.plot(downsampled_X_raw)
-  #plt.show()
 
+  # slice MEP 
   X_sliced = []
-  #OBS Vurder hvornår vi skal slice fra og til. 
-  x_start, x_end = int(len(downsampled_X_raw[0,:])/2+20) , int(len(downsampled_X_raw[0,:])/2+200)
-  for i in range(len(downsampled_X_raw)):
-    X_sliced.append(downsampled_X_raw[i,:][x_start:x_end])
+  for i in range(len(np.transpose(downsampled_X_raw))):
+    X_sliced.append(np.transpose(downsampled_X_raw)[i][4010:4200])
   X_sliced = np.transpose(np.array(X_sliced))
 
   X = X_sliced
   return X_raw,y, X
 
+def delete_group456(X,y):
+  """Deleting frames with tag of 4,5 or 6"""
+  indices_to_remove = [i for i in range(len(y)) if y[i] in [4, 5, 6]]
+  X = np.delete(np.transpose(X), indices_to_remove, axis=0)
+  y = [y[i] for i in range(len(y)) if i not in indices_to_remove]
+  X = np.transpose(X)
+  return X, y
+
 def get_all_data(filelist):
+    '''Outputs X in shape (190, 2019 repitions for all subjects)''' 
     X_raw, y, X_first = get_one_data(filelist[0])
     filelist.pop(0)
 
     for path in filelist:
-        #data = read_mat(path)
-        #key = list(data.keys())[3]
 
-        X_raw, y, X = get_one_data(path) #slice each subject
+        X_raw, y_loop, X = get_one_data(path) #slice each subject
         X_first = np.concatenate((X, X_first),axis=1)
-
+        y.extend(y_loop)
     X = X_first
-    return X
+
+    return X, y
     
 
 
-filelist = get_all_paths(main_path)
-X = get_all_data(filelist)
-print(X.shape)
-plt.plot(X)
-plt.show()
+#filelist = get_all_paths(main_path)
+#X,y  = get_all_data(filelist)
+#print("bunitooo")
+#print(X.shape)
+#plt.plot(X)
+#plt.show()
 #print(X)
