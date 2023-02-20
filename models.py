@@ -16,16 +16,16 @@ def logregr(X,y):
   from sklearn.linear_model import LogisticRegression
   # all parameters not specified are set to their defaults
   logisticRegr = LogisticRegression(max_iter=2000)
-  logisticRegr.fit(x_train, y_train)
+  logisticRegr.fit(X_train, y_train)
   # Returns a NumPy Array
   # Predict for One Observation (image)
-  logisticRegr.predict(x_test[0].reshape(1,-1))
+  logisticRegr.predict(X_test[0].reshape(1,-1))
   predictions = logisticRegr.predict(X_test)
   # Use score method to get accuracy of model
   score = logisticRegr.score(X_test, y_test)
   return score, X_train, X_test, y_train, y_test, predictions
 
-def confmat(y_test, predictions):
+def confmat(y_test, predictions, score):
   cm = metrics.confusion_matrix(y_test, predictions)
   print(cm)
   """
@@ -69,13 +69,13 @@ def MLP(X,y):
   score = clf.score(X_test, y_test)
   return score, X_train, X_test, y_train, y_test, predictions, predictions_prob
   
-X,y,X_sliced = data.get_one_data(path_x01666)
-
-
-logregscore, x_train, x_test, y_train, y_test, predictions = logregr(X_sliced,y)
-print(f"logregression score: {logregscore}")
 
 
 
-MLPscore, x_train, x_test, y_train, y_test, predictions, predictions_prob = MLP(X_sliced,y)
-print(f"MLP score: {MLPscore}")
+#Run models
+#X,y,X_sliced = data.get_one_data(path_x01666)
+
+#logregscore, x_train, x_test, y_train, y_test, predictions = logregr(X_sliced,y)
+#print(f"logregression score: {logregscore}")
+#MLPscore, x_train, x_test, y_train, y_test, predictions, predictions_prob = MLP(X_sliced,y)
+#print(f"MLP score: {MLPscore}")
