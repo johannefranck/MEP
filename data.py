@@ -45,6 +45,7 @@ def unique_groups(main_path, filelist):
         i += 1
     return groups
 
+filelist = get_all_paths(main_path)
 groups = unique_groups(main_path, filelist)
 print(groups)
 print(len(groups))
