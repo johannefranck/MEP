@@ -1,13 +1,4 @@
-print("hej johanne er sej")
-import scipy.io as sio
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-from sklearn import metrics
 from pymatreader import read_mat
-import os
-from scipy import signal
 import data
 
 # Define the path
