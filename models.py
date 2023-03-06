@@ -5,10 +5,15 @@ import pandas as pd
 import seaborn as sns
 from sklearn import metrics
 from pymatreader import read_mat
-import data
+from sklearn.model_selection import GroupShuffleSplit
+#import data
 
-path_x01666 = data.path_x01666
+#path_x01666 = data.path_x01666
+def group_split(X,y,groups):
+  group_split = GroupShuffleSplit(X,y,groups)
+  
 
+  return X_train, X_test, y_train, y_test
 #### Logistic regression model
 def logregr(X,y):
   from sklearn.model_selection import train_test_split
@@ -40,15 +45,15 @@ def confmat(y_test, predictions, score):
 
 
   plt.figure(figsize=(5,5))
-  plt.imshow(cm, interpolation='nearest', cmap='Pastel1')
+  plt.imshow(cm, interpolation='nearest', cmap='RdBu')
   plt.title('Accuracy Score: {0}'.format(score), size = 15)
   plt.colorbar()
-  tick_marks = np.arange(6)
-  plt.xticks(tick_marks, ["1", "2", "3", "4", "5", "6"], rotation=45, size = 10)
-  plt.yticks(tick_marks, ["1", "2", "3", "4", "5", "6"], size = 10)
+  tick_marks = np.arange(2)
+  plt.xticks(tick_marks, ["1", "2"], rotation=45, size = 10)
+  plt.yticks(tick_marks, ["1", "2"], size = 10)
   plt.tight_layout()
-  plt.ylabel('Actual label', size = 6)
-  plt.xlabel('Predicted label', size = 6)
+  plt.ylabel('Actual label', size = 2)
+  plt.xlabel('Predicted label', size = 2)
   width, height = cm.shape
   for x in range(width):
     for y in range(height):
