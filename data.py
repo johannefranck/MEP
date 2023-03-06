@@ -12,6 +12,7 @@ from scipy import signal
 main_path ="/mnt/projects/USS_MEP/COIL_ORIENTATION"
 path_x01666 = "/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X01666_ses-1_task-coilorientation_emg.mat"
 
+
 def get_all_paths(main_path):
     # Outputs Filelist containing all files
     #Store all the file names in this list
@@ -22,8 +23,10 @@ def get_all_paths(main_path):
         for file in files:
             #append the file name to the list
             filelist.append(os.path.join(root,file))
-    #Removes all the files that Lasse havent checked yet, so only using files with sub.
-    filelist = [ x for x in filelist if "sub" in x ]
+    #Removes xlsx files
+    filelist = [ x for x in filelist if "xlsx" not in x ] #50
+    #filelist = [ x for x in filelist if "sub" not in x ] #19
+    
     return filelist
 
 
@@ -32,23 +35,31 @@ def unique_groups(main_path, filelist):
     groups = []
     i = 0
     for k, file in enumerate(filelist):
-        subject = file[43:49]
-
+        if "sub" in file:
+            subject = file[43:49]
+        else:
+            subject = file[39:45]
+        #print(subject)
+        # count subject as one group in case of multiple runs
         if subject in filelist[k-1]:
             i = i - 1
 
+        #we need the key
         data = read_mat(file)
-        key = list(data.keys())[3]
+        if "sub" in file: 
+            key = list(data.keys())[3]
+        else:
+            key = list(data.keys())[0]
 
+        # make a list with group number number of reps for each subject
         reps = data[key]["frames"]
         groups.extend([i]*reps)
         i += 1
     return groups
 
-filelist = get_all_paths(main_path)
-groups = unique_groups(main_path, filelist)
-print(groups)
-print(len(groups))
+#filelist = get_all_paths(main_path)
+#groups = unique_groups(main_path, filelist)
+
 
 def downsample(array, npts):
   # Downsample function
@@ -58,7 +69,10 @@ def downsample(array, npts):
 def get_one_data(path):
   # Outputs one nd array in format (180, repetitions for one subject)
   data = read_mat(path)
-  key = list(data.keys())[3]
+  if "sub" in path:
+      key = list(data.keys())[3]
+  else:
+      key = list(data.keys())[0]
 
   X_raw = data[key]['values'][:,0]
   y = data[key]['frameinfo']['state']
@@ -84,7 +98,7 @@ def get_one_data(path):
 
 def delete_group456(X,y):
   """Deleting frames with tag of 4,5 or 6"""
-  indices_to_remove = [i for i in range(len(y)) if y[i] in [4, 5, 6]]
+  indices_to_remove = [i for i in range(len(y)) if y[i] in [3, 4, 5, 6]]
   X = np.delete(np.transpose(X), indices_to_remove, axis=0)
   y = [y[i] for i in range(len(y)) if i not in indices_to_remove]
   X = np.transpose(X)
@@ -98,8 +112,9 @@ def get_all_data(filelist):
     for path in filelist:
 
         X_raw, y_loop, X = get_one_data(path) #slice each subject
-        X_first = np.concatenate((X, X_first),axis=1)
-        y.extend(y_loop)
+        if len(X) != 0:
+            X_first = np.concatenate((X, X_first),axis=1)
+            y.extend(y_loop)
     X = X_first
 
     return X, y
