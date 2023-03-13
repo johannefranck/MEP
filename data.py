@@ -8,6 +8,7 @@ from pymatreader import read_mat
 import os
 from scipy import signal
 
+
 #path to all the files
 main_path ="/mnt/projects/USS_MEP/COIL_ORIENTATION"
 path_x01666 = "/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X01666_ses-1_task-coilorientation_emg.mat"
@@ -138,8 +139,37 @@ def get_all_data(filelist):
     return X, y, groups
     
 
+def plotgroups(X, groups):
+  colors = plt.rcParams['axes.prop_cycle'].by_key()['color'] # get a list of colors from the default color cycle in matplotlib
+  color_dict = {i: colors[i%len(colors)] for i in range(52)} # create a dictionary with keys from 0 to 51, and values as different colors from the matplotlib library
 
-#filelist = get_all_paths(main_path)
+  # Get the time array with a sampling rate of 2000 Hz
+  STAA = 7.5 # sliced_time_after_artifact, here it is 15 timepoints, which is the same a 7.5 ms
+  time = np.arange(np.transpose(X).shape[1]) / 2000 * 1000 + STAA
+
+  # Create the figure and axes objects
+  fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
+
+  # Plot the data for each group
+  lines = []
+  for group in set(groups):
+      idx = np.where(np.array(groups) == group)[0]
+      for i in range(len(idx)):
+          line, = axs.plot(time, np.transpose(X)[idx[i], :], c=color_dict[group], alpha=0.5)
+          lines.append(line)
+
+  # Set the axis labels and title
+  axs.set_xlabel('Time (ms)')
+  axs.set_ylabel('MEP signal')
+  axs.set_title('MEP signals by group')
+
+  # Add the legend
+  legend_labels = list(set(groups))
+  axs.legend(lines, legend_labels, loc='best', prop={'size': 'xx-small'}, title='Group', title_fontsize='small', framealpha=0.5, facecolor='white', edgecolor='black', labelcolor=colors)
+
+  # Show the plot
+  plt.show()
+#filelist = get_all_paths(main_path)'xx-small',
 #X,y  = get_all_data(filelist)
 #print("bunitooo")
 #print(X.shape)
