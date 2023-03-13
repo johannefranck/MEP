@@ -66,7 +66,7 @@ def downsample(array, npts):
   downsampled = signal.resample(array, npts)
   return downsampled
 
-def get_one_data(path):
+def get_one_data(path, groupnr, groups):
   # Outputs one nd array in format (180, repetitions for one subject)
   data = read_mat(path)
   if "sub" in path:
@@ -76,8 +76,9 @@ def get_one_data(path):
 
   X_raw = data[key]['values'][:,0]
   y = data[key]['frameinfo']['state']
-  X_raw, y = delete_group456(X_raw,y)
-
+  X_raw, y = delete_frames(X_raw,y)
+  reps = len(y)
+  groups.extend([groupnr]*reps)
   # downsample
   if len(X_raw)==20000:
     downsampled_X_raw = []
@@ -90,14 +91,14 @@ def get_one_data(path):
   # slice MEP 
   X_sliced = []
   for i in range(len(np.transpose(downsampled_X_raw))):
-    X_sliced.append(np.transpose(downsampled_X_raw)[i][4010:4200])
+    X_sliced.append(np.transpose(downsampled_X_raw)[i][4025:4110])
   X_sliced = np.transpose(np.array(X_sliced))
 
   X = X_sliced
-  return X_raw,y, X
+  return X_raw,y, X, groups
 
-def delete_group456(X,y):
-  """Deleting frames with tag of 4,5 or 6"""
+def delete_frames(X,y):
+  """Deleting frames with tag of 3,4,5 or 6, PA: 1, AP: 2"""
   indices_to_remove = [i for i in range(len(y)) if y[i] in [3, 4, 5, 6]]
   X = np.delete(np.transpose(X), indices_to_remove, axis=0)
   y = [y[i] for i in range(len(y)) if i not in indices_to_remove]
@@ -106,18 +107,35 @@ def delete_group456(X,y):
 
 def get_all_data(filelist):
     '''Outputs X in shape (190, 2019 repitions for all subjects)''' 
-    X_raw, y, X_first = get_one_data(filelist[0])
+    groups = []
+    groupnr = 0
+    X_raw, y, X_first, groups = get_one_data(filelist[0], groupnr, groups)
     filelist.pop(0)
 
-    for path in filelist:
+    groupnr += 1
+    for k, path in enumerate(filelist):
+        
+        #This part is making the belonging group number to the label.
+        data = read_mat(path)
+        if "sub" in path:
+            subject = path[43:49]
+            key = list(data.keys())[3]
+        else:
+            subject = path[39:45]
+            key = list(data.keys())[0]
 
-        X_raw, y_loop, X = get_one_data(path) #slice each subject
+        if subject in filelist[k-1]:
+            groupnr = groupnr - 1
+
+          
+        X_raw, y_loop, X, groups = get_one_data(path, groupnr, groups) #slice each subject
+        groupnr += 1
         if len(X) != 0:
             X_first = np.concatenate((X, X_first),axis=1)
             y.extend(y_loop)
     X = X_first
 
-    return X, y
+    return X, y, groups
     
 
 

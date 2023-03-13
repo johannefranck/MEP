@@ -16,7 +16,26 @@ plt.show()
 
 filelist = data.get_all_paths(main_path)
 
-X, y = data.get_all_data(filelist)
+X, y, groups = data.get_all_data(filelist)
+
+PAlist = []
+APlist = []
+
+for i in range(len(y)):
+    if y[i] == 1: #PA: 1
+        PAlist.append(i) #index in y
+        PAi = X[:,y[i]]
+        PAs = PAlist.append(PAi)
+    elif y[i] == 2: #AP: 2
+        APlist.append(i)
+
+PAmeans = []
+APmeans = []
+for i in range(len(PAlist)):
+    PAi = X[:,PAlist[i]]
+PAs = np.vstack([PAi])
+    #PAmean = PAmeans.append(np.mean(PAs[i,:]))
+
 plt.plot(X)
 plt.show()
 
