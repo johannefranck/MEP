@@ -15,9 +15,33 @@ plt.show()
 """
 
 filelist = data.get_all_paths(main_path)
-
 X, y, groups = data.get_all_data(filelist)
+"""
+from sklearn.model_selection import train_test_split, GroupKFold
 
+# Split the data into training and testing sets based on groups
+groups_train, groups_test = train_test_split(groups, test_size=0.2, random_state=42)
+    
+# Get the indices of the training groups
+train_groups_idx = np.where(np.isin(groups, groups_train))[0]
+
+# Define the training data
+n_splits = int(len(set(groups_train)) * 0.8)  # 80% of the groups for training
+group_kfold = GroupKFold(n_splits=n_splits)
+train_indexes, _ = next(group_kfold.split(X[train_groups_idx], y[train_groups_idx], groups[train_groups_idx]))
+X_train, y_train = X[train_groups_idx][train_indexes], y[train_groups_idx][train_indexes]
+
+# Get the indices of the testing groups
+test_groups_idx = np.where(np.isin(groups, groups_test))[0]
+
+# Define the testing data
+X_test, y_test = X[test_groups_idx], y[test_groups_idx]
+"""
+#data.train_test_split(X,y,groups)
+#data.plotgroups(X, groups)
+
+
+"""
 PAlist = []
 APlist = []
 
@@ -38,7 +62,7 @@ PAs = np.vstack([PAi])
 
 plt.plot(X)
 plt.show()
-
+"""
 
 #logregscore, X_train, X_test, y_train, y_test, predictions = models.logregr(np.transpose(X),y)
 #models.confmat(y_test, predictions, logregscore)

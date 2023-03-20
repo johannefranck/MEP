@@ -5,15 +5,12 @@ import pandas as pd
 import seaborn as sns
 from sklearn import metrics
 from pymatreader import read_mat
-from sklearn.model_selection import GroupShuffleSplit
+
 #import data
 
 #path_x01666 = data.path_x01666
-def group_split(X,y,groups):
-  group_split = GroupShuffleSplit(X,y,groups)
-  
 
-  return X_train, X_test, y_train, y_test
+
 #### Logistic regression model
 def logregr(X,y):
   from sklearn.model_selection import train_test_split
