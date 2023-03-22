@@ -2,11 +2,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import data 
 import models 
+#import plot_functions
 
 main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
 
 """
-path_x01666 = data.path_x01666
+path_x01666 = data.path_x0166
 path_x02299 = "/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X02299_ses-1_task-coilorientation_emg.mat"
 X,y,X_sliced = data.get_one_data(path_x02299)
 
@@ -16,31 +17,54 @@ plt.show()
 
 filelist = data.get_all_paths(main_path)
 X, y, groups = data.get_all_data(filelist)
-"""
-from sklearn.model_selection import train_test_split, GroupKFold
 
-# Split the data into training and testing sets based on groups
-groups_train, groups_test = train_test_split(groups, test_size=0.2, random_state=42)
+tot_scores, tot_indi_scores, mean_indi_scores = logo_logisticregression_prsubject(X, y, groups)
+
+plt.bar(list(set(groups),mean)
+plt.show()     
+
+"""
+from sklearn.model_selection import LeaveOneGroupOut
+from sklearn.linear_model import LogisticRegression
+X = np.array(np.transpose(X))
+y = np.array(y)
+groups = np.array(groups)
+
+tot_scores = []
+tot_indi_scores = []
+for subject in set(groups):
+    logo = LeaveOneGroupOut()
+    #logo.get_n_splits(X, y, list(set(groups)))
+    scores = []
     
-# Get the indices of the training groups
-train_groups_idx = np.where(np.isin(groups, groups_train))[0]
+    #for train_index, test_index in logo.split(X[temp_subject], y[temp_subject], temp_subject[0]):
+    temp_subject = np.Xwhere(groups == subject)
+    test = list(range(0,len(temp_subject[0])))
+    for train_index, test_index in logo.split(X[temp_subject[0]], y[temp_subject[0]],test):
+        #try:
+        
+        X_train, X_test = X[temp_subject[0]][train_index], X[temp_subject[0]][test_index]
+        y_train, y_test = y[temp_subject[0]][train_index], y[temp_subject[0]][test_index]
+        if len(list(set(y_train))) > 1:
+            lr = LogisticRegression()
+            lr.fit(X_train, y_train)
+            accuracy = lr.score(X_test, y_test)
+            scores.append(accuracy)
+        else:
+            print("smaller than 2", subject)
+        #except:
+        #    print("fail",subject)
+    tot_scores.extend(scores)
+    tot_indi_scores.append(scores)
+print(np.mean(tot_scores), scores)
+print("l[l[l[l]]]")
 
-# Define the training data
-n_splits = int(len(set(groups_train)) * 0.8)  # 80% of the groups for training
-group_kfold = GroupKFold(n_splits=n_splits)
-train_indexes, _ = next(group_kfold.split(X[train_groups_idx], y[train_groups_idx], groups[train_groups_idx]))
-X_train, y_train = X[train_groups_idx][train_indexes], y[train_groups_idx][train_indexes]
-
-# Get the indices of the testing groups
-test_groups_idx = np.where(np.isin(groups, groups_test))[0]
-
-# Define the testing data
-X_test, y_test = X[test_groups_idx], y[test_groups_idx]
 """
-#data.train_test_split(X,y,groups)
-#data.plotgroups(X, groups)
 
 
+#score, X_train, X_test, y_train, y_test, predictions = models.logregr(X_train, X_test, y_train, y_test)
+#models.confmat(y_test, predictions, score)
+#print(score)
 """
 PAlist = []
 APlist = []
