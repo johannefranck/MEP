@@ -67,7 +67,7 @@ def plot_coil(X,y,groups, mean, subject):
     axs.set_xlabel('Time (ms)')
     axs.set_ylabel('mV')
     if type(subject)==int:
-        axs.set_title('MEP signals by Coil orientarion, subject ' + str(subject))
+        axs.set_title('MEP signals by Coil orientarion, subject ' + str(list_subjects[subject-1]) + ', groupnr: ' + str(subject) + ', trajs: ' + str(len(y)))
     else:
         axs.set_title('MEP signals by Coil orientarion')
 
@@ -88,26 +88,33 @@ def plot_coil(X,y,groups, mean, subject):
     plt.show()
 
 
-def plot_subject_coil(X,y,groups,mean,subject):
+def plot_subject_coil(X,y,groups,list_subjects,mean,subject):
     #plot a subject with PA and AP 
     #mean = True / False, set subject as int for wanted subject
     X = np.array(np.transpose(X))
     y = np.array(y)
     groups = np.array(groups)
+    #list_subjects = np.array(list_subjects)
 
     group_i_where=np.where(groups == subject)[0]
     yi = y[list(group_i_where)]
     Xi = X[list(group_i_where)]
-    plot_coil(np.transpose(Xi),yi,groups,mean, subject)
+    plot_coil(np.transpose(Xi),yi,groups,mean,subject)
 
 
 
 main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
 
 filelist = data.get_all_paths(main_path)
-X, y, groups = data.get_all_data(filelist)
+#filelist = ['/mnt/projects/USS_MEP/COIL_ORIENTATION/X02035_coil_orient.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/X05398_coil_orient.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/X06188_coil_orient.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/X16394_COIL_ORIENT.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/X30095_COIL_ORIENT.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/X34930_CoilOrientation000.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/X36342_COIL_ORIENT.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/X37032_coil_orient_000.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/X37032_coil_orient_001.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/X51231_CoilOrientation.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/X58086_COIL_ORIERNT.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/X81190_Coil_orientation.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/X88230_COIL_ORIENT.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/X91583_CoilOrientation000.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/X91583_CoilOrientation001.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/X96343_coil_orient.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X01666_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X02299_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X03004_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X13844_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X24208_ses-1_task-coilorientation_run001_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X24208_ses-1_task-coilorientation_run002_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X29554_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X34646_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X36523_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X37945_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X38547_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X40027_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X42448_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X44909_ses-1_task-coilorientation_run001_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X44909_ses-1_task-coilorientation_run002_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X48739_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X55579_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X59029_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X61122_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X64181_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X70786_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X72350_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X74644_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X76928_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X81562_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X85446_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X86768_ses-1_task-coilorientation_run001_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X86768_ses-1_task-coilorientation_run002_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X96010_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X98504_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X99909_ses-1_task-coilorientation_emg.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/x03172_Coil_orient000.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/x03172_Coil_orient001.mat', '/mnt/projects/USS_MEP/COIL_ORIENTATION/x71487_coil_orient.mat']
+
+X, y, groups, list_subjects = data.get_all_data(filelist)
 
 #plot_groups(X, groups, specifics = [3])
 #plot_coil(X,y,groups, mean = False)
-#plot_subject_coil(X,y,groups,mean=False,subject=6)
+
+subject = 1
+plot_subject_coil(X,y,groups,list_subjects,mean=False,subject=subject)
+print(filelist)
+print(filelist[subject])
 

@@ -108,9 +108,13 @@ def MLP(X,y):
   return score, X_train, X_test, y_train, y_test, predictions, predictions_prob
   
 
-def logo_logisticregression_prsubject(X, y, groups):
+def logo_logisticregression_prsubject(X, y, groups, onerow = False):
   
-  X = np.array(np.transpose(X))
+  #Checking whether it is onerow, ex. if it is only apmlitude
+  if onerow == True:
+    X = np.array(X)
+  else:
+    X = np.array(np.transpose(X))
   y = np.array(y)
   groups = np.array(groups)
 
@@ -122,7 +126,7 @@ def logo_logisticregression_prsubject(X, y, groups):
     scores = []
     
     #for train_index, test_index in logo.split(X[temp_subject], y[temp_subject], temp_subject[0]):
-    temp_subject = np.Xwhere(groups == subject)
+    temp_subject = np.where(groups == subject)
     test = list(range(0,len(temp_subject[0])))
     for train_index, test_index in logo.split(X[temp_subject[0]], y[temp_subject[0]],test):
         #try:
