@@ -16,11 +16,15 @@ plt.show()
 """
 
 filelist = data.get_all_paths(main_path)
-X, y, groups = data.get_all_data(filelist)
+#print(filelist)
+X, y, groups, list_subjects = data.get_all_data(filelist)
 
-tot_scores, tot_indi_scores, mean_indi_scores = logo_logisticregression_prsubject(X, y, groups)
-
-plt.bar(list(set(groups),mean)
+X_amplitude = data.other_X(X)
+print("333")
+tot_scores, tot_indi_scores, mean_indi_scores = models.logo_logisticregression_prsubject(X, y, groups, onerow = False)
+print(np.mean(tot_scores))
+#X_amplitude = data.other_X(X)
+plt.bar(list(set(groups)),mean_indi_scores)
 plt.show()     
 
 """

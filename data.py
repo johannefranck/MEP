@@ -5,9 +5,12 @@ import pandas as pd
 import seaborn as sns
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn import metrics
+from sklearn.model_selection import GroupKFold
+
 from pymatreader import read_mat
 import os
 from scipy import signal
+import numpy_indexed as npi
 
 
 #path to all the files
@@ -25,13 +28,14 @@ def get_all_paths(main_path):
         for file in files:
             # Append the file name to the list
             filelist.append(os.path.join(root,file))
+    
     # Removes xlsx files
     filelist = [ x for x in filelist if "xlsx" not in x ] #50
     #filelist = [ x for x in filelist if "sub" not in x ] #19
-    
+    filelist = np.sort(filelist).tolist()
     return filelist
 
-
+'''
 def unique_groups(main_path, filelist):
     # Initialize a list to store the unique subjects (for train test split)
     groups = []
@@ -58,7 +62,8 @@ def unique_groups(main_path, filelist):
         i += 1
 
     return groups
-
+'''
+    
 def downsample(array, npts):
     # Downsample function
     downsampled = signal.resample(array, npts)
@@ -108,9 +113,11 @@ def get_all_data(filelist):
     # Outputs X in shape (85 points signal, 2019 repitions for all subjects)??
     groups = []
     groupnr = 0
-    X_raw, y, X_first, groups = get_one_data(filelist[0], groupnr, groups)
+    filelist_idx0 = filelist[0]
+    X_raw, y, X_first, groups = get_one_data(filelist_idx0, groupnr, groups)
     filelist.pop(0)
-
+    
+    list_subjects = [] # names
     groupnr += 1
     for k, path in enumerate(filelist):
         # This part is making the belonging group number to the label.
@@ -132,12 +139,19 @@ def get_all_data(filelist):
         if len(X) != 0:
             X_first = np.concatenate((X, X_first),axis=1)
             y.extend(y_loop)
+        
+        if subject not in list_subjects:
+            list_subjects.append(subject)
+    filelist.insert(0,filelist_idx0)
     X = X_first
 
-    return X, y, groups
+    filelist = np.sort(filelist).tolist()
+
+    return X, y, groups, list_subjects
     
 
-def plotgroups(X, groups):
+
+def plot_groups(X, groups, specifics):
     # Plotting the different subject MEP signals in the same plot, with time on the x axis
 
     # Color pre-definitions
@@ -153,11 +167,22 @@ def plotgroups(X, groups):
 
     # Plot the data for each group
     lines = []
-    for group in set(groups):
-        idx = np.where(np.array(groups) == group)[0]
-        for i in range(len(idx)):
-            line, = axs.plot(time, np.transpose(X)[idx[i], :], c=color_dict[group], alpha=0.5)
-            lines.append(line)
+    if specifics != ["all"]:
+        idx = 0
+        for group in set(specifics):
+            traj_ids = np.where(np.array(groups) == group)[0]
+            for i in range(len(traj_ids)):
+                line, = axs.plot(time, np.transpose(X)[traj_ids[i], :], c=color_dict[group+idx], alpha=0.5)
+                lines.append(line)
+            idx += 1
+            colors
+    else:
+        for group in set(groups):
+            idx = np.where(np.array(groups) == group)[0]
+            for i in range(len(idx)):
+                line, = axs.plot(time, np.transpose(X)[idx[i], :], c=color_dict[group], alpha=0.5)
+                lines.append(line)
+        
 
     # Set the axis labels and title
     axs.set_xlabel('Time (ms)')
@@ -165,6 +190,8 @@ def plotgroups(X, groups):
     axs.set_title('MEP signals by group')
 
     # Add the legend
+    if specifics != ["all"]:
+        groups = specifics
     legend_labels = list(set(groups))
     axs.legend(lines, legend_labels, loc='best', prop={'size': 'xx-small'}, title='Group', title_fontsize='small', framealpha=0.5, facecolor='white', edgecolor='black', labelcolor=colors)
 
@@ -172,7 +199,7 @@ def plotgroups(X, groups):
     plt.show()
 
 def frame_split(X,y):
-    'Splitting the frames (AP and PA), and plotting their mean compared to eachother'
+    # Splitting the frames (AP and PA), and plotting their mean compared to each other
     C = npi.group_by(y).split(np.transpose(X))
     C0 = np.transpose(C[0])
     C1 = np.transpose(C[1])
@@ -180,6 +207,28 @@ def frame_split(X,y):
     return AP_split, PA_split
 
 def train_test_split(X,y,groups):
+    from sklearn.model_selection import LeaveOneGroupOut
+    X = np.array(np.transpose(X))
+    y = np.array(y)
+    groups = np.array(groups)
+    group_kfold = LeaveOneGroupOut()
+    #group_kfold.get_n_splits(X, y, groups)
+    #print(group_kfold)
+    GroupKFold(n_splits=2)
+    scores = []
+    for train_index, test_index in group_kfold.split(X, y, groups):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+        """
+        from sklearn.linear_model import LogisticRegression
+        lr = LogisticRegression()
+        lr.fit(X_train, y_train)
+        accuracy = lr.score(X_test, y_test)
+        scores.append(accuracy)
+        print(accuracy, scores)
+        """
+
+    """
     group_split = GroupShuffleSplit(n_splits=43, test_size=0.1, random_state=None)
     group_split.get_n_splits()
     for i, (train_index, test_index) in enumerate(group_split.split(np.transpose(X), y, groups)):
@@ -187,4 +236,14 @@ def train_test_split(X,y,groups):
       print(f"  Train: index={train_index}, group={groups[train_index]}")
       print(f"  Test:  index={test_index}, group={groups[test_index]}")
     #group_split = GroupShuffleSplit(X,y,groups)
+    """
+
     return X_train, X_test, y_train, y_test
+
+def other_X(X):
+    X_amplitude = np.max(X, axis=0) - np.min(X, axis=0)
+    X_amplitude = X_amplitude.reshape(-1, 1)
+
+    
+    
+    return X_amplitude
