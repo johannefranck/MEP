@@ -7,6 +7,7 @@ from sklearn import metrics
 from pymatreader import read_mat
 from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
 
 #import data
 
@@ -108,7 +109,7 @@ def MLP(X,y):
   return score, X_train, X_test, y_train, y_test, predictions, predictions_prob
   
 
-def logo_logisticregression_prsubject(X, y, groups, onerow = False):
+def logo_logisticregression_prsubject(X, y, groups, onerow = False, LR = False, SVM = False):
   
   #Checking whether it is onerow, ex. if it is only apmlitude
   if onerow == True:
@@ -133,16 +134,29 @@ def logo_logisticregression_prsubject(X, y, groups, onerow = False):
         
         X_train, X_test = X[temp_subject[0]][train_index], X[temp_subject[0]][test_index]
         y_train, y_test = y[temp_subject[0]][train_index], y[temp_subject[0]][test_index]
-        if len(list(set(y_train))) > 1:
-            lr = LogisticRegression()
-            lr.fit(X_train, y_train)
-            accuracy = lr.score(X_test, y_test)
-            scores.append(accuracy)
-        else:
-            print("smaller than 2", subject)
-        #except:
-        #    print("fail",subject)
-    tot_scores.extend(scores)
+
+        if LR == True:
+          if len(list(set(y_train))) > 1:
+              lr = LogisticRegression()
+              lr.fit(X_train, y_train)
+              accuracy = lr.score(X_test, y_test)
+              scores.append(accuracy)
+          else:
+              print("smaller than 2", subject)
+          #except:
+          #    print("fail",subject)
+
+        if SVM == True:
+            # Create an SVM classifier with a linear kernel
+            svm = SVC(kernel='linear')
+
+            # Train the classifier on the training data
+            svm.fit(X_train, y_train)
+
+            # Test the classifier on the test data
+            accuracy = svm.score(X_test, y_test)
+            scores.append(accuracy)    
+            tot_scores.extend(scores)
     tot_indi_scores.append(scores)
     mean = []
     for i in tot_indi_scores:
