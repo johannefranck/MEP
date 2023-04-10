@@ -109,29 +109,33 @@ def MLP(X,y):
   return score, X_train, X_test, y_train, y_test, predictions, predictions_prob
   
 
-def logo_logisticregression_prsubject(X, y, groups, onerow = False, LR = False, SVM = False):
+
+def loo_logisticregression_prsubject(X, y, groups, onerow = False, LR = False, SVM = False):
   
-  #Checking whether it is onerow, ex. if it is only apmlitude
+  #Checking whether it is onerow, one feature ie. if it is only apmlitude or latency
   if onerow == True:
     X = np.array(X)
   else:
-    X = np.array(np.transpose(X))
+    X = np.array(np.transpose(X)) #np.transpose(
   y = np.array(y)
   groups = np.array(groups)
 
   tot_scores = []
   tot_indi_scores = []
+  Coefficients = []
+  intercepts = []
+  coef_meanssss = []
   for subject in set(groups):
-    logo = LeaveOneGroupOut()
+    loo = LeaveOneGroupOut()
     #logo.get_n_splits(X, y, list(set(groups)))
     scores = []
     
     #for train_index, test_index in logo.split(X[temp_subject], y[temp_subject], temp_subject[0]):
     temp_subject = np.where(groups == subject)
     test = list(range(0,len(temp_subject[0])))
-    for train_index, test_index in logo.split(X[temp_subject[0]], y[temp_subject[0]],test):
-        #try:
-        
+    
+    for train_index, test_index in loo.split(X[temp_subject[0]], y[temp_subject[0]],test):
+        # select the indices among 1683 traj for subject
         X_train, X_test = X[temp_subject[0]][train_index], X[temp_subject[0]][test_index]
         y_train, y_test = y[temp_subject[0]][train_index], y[temp_subject[0]][test_index]
 
@@ -139,8 +143,15 @@ def logo_logisticregression_prsubject(X, y, groups, onerow = False, LR = False, 
           if len(list(set(y_train))) > 1:
               lr = LogisticRegression()
               lr.fit(X_train, y_train)
+              classes = lr.classes_ #array([1,2]) aka AP og PA
+              coef = lr.coef_ 
+              intercept = lr.intercept_
+              Coefficients.append(coef[0])
+              coef_mean = np.mean(Coefficients,axis = 0)
+              intercepts.extend(intercept)
               accuracy = lr.score(X_test, y_test)
               scores.append(accuracy)
+              tot_scores.extend(scores)
           else:
               print("smaller than 2", subject)
           #except:
@@ -157,12 +168,26 @@ def logo_logisticregression_prsubject(X, y, groups, onerow = False, LR = False, 
             accuracy = svm.score(X_test, y_test)
             scores.append(accuracy)    
             tot_scores.extend(scores)
+    #plt.plot(coef_mean)
+    coef_meanssss.append(coef_mean)
     tot_indi_scores.append(scores)
     mean = []
     for i in tot_indi_scores:
       mean.append(np.mean(i))
     mean_indi_scores = mean
+  #plt.plot(np.mean(coef_meanssss,axis=0))
   return tot_scores, tot_indi_scores, mean_indi_scores
+
+import data 
+from pymatreader import read_mat
+main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
+filelist = data.get_all_paths(main_path)
+#print(filelist)
+X, y, groups, list_subjects = data.get_all_data(filelist) #np.shape(X)=(85,1683)
+#X_amplitude, X_latency,X_ampl_late = data.other_X(X)
+tot_scores, tot_indi_scores, mean_indi_scores = loo_logisticregression_prsubject(X, y, groups, onerow = False, LR = True, SVM = False)
+print(np.mean(tot_scores))
+
 
 #Run models
 #X,y,X_sliced = data.get_one_data(path_x01666)
