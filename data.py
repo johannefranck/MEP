@@ -6,6 +6,7 @@ import seaborn as sns
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn import metrics
 from sklearn.model_selection import GroupKFold
+from sklearn.svm import SVC
 
 from pymatreader import read_mat
 import os
@@ -30,47 +31,23 @@ def get_all_paths(main_path):
             filelist.append(os.path.join(root,file))
     
     # Removes xlsx files
-    filelist = [ x for x in filelist if "xlsx" not in x ] #50
-    #filelist = [ x for x in filelist if "sub" not in x ] #19
+    filelist = [ x for x in filelist if "xlsx" not in x ] 
+    filelist = [ x for x in filelist if "02035" not in x ] #bad signal
+    filelist = [ x for x in filelist if "96343" not in x ] #bad signal
+
     filelist = np.sort(filelist).tolist()
     return filelist
 
-'''
-def unique_groups(main_path, filelist):
-    # Initialize a list to store the unique subjects (for train test split)
-    groups = []
-    i = 0
-    for k, file in enumerate(filelist):
-        if "sub" in file:
-            subject = file[43:49]
-        else:
-            subject = file[39:45]
-        # Count subject as one group in case of multiple runs with same subject
-        if subject in filelist[k-1]:
-            i = i - 1
-
-        # We need the key
-        data = read_mat(file)
-        if "sub" in file: 
-            key = list(data.keys())[3]
-        else:
-            key = list(data.keys())[0]
-
-        # Make a list with group number number of reps for each subject
-        reps = data[key]["frames"]
-        groups.extend([i]*reps)
-        i += 1
-
-    return groups
-'''
-    
 def downsample(array, npts):
-    # Downsample function
+    # Downsample function, returns array as downsampled
     downsampled = signal.resample(array, npts)
     return downsampled
 
 def get_one_data(path, groupnr, groups):
     # Outputs one nd array in format (85 points, repetitions for one subject, list of all groups)
+    # Uses the downsampel 
+    # Uses the delete frames
+    # Does slicing to get the time with MEP
     data = read_mat(path)
     if "sub" in path:
         key = list(data.keys())[3]
@@ -82,7 +59,7 @@ def get_one_data(path, groupnr, groups):
     X_raw, y = delete_frames(X_raw,y)
     reps = len(y)
     groups.extend([groupnr]*reps)
-
+    
     # Downsample
     if len(X_raw)==20000:
       downsampled_X_raw = []
@@ -95,14 +72,19 @@ def get_one_data(path, groupnr, groups):
     # Slice signal to specific range with MEP
     X_sliced = []
     for i in range(len(np.transpose(downsampled_X_raw))):
-      X_sliced.append(np.transpose(downsampled_X_raw)[i][4025:4110])
+        # for some paths the MEP signal is at 5000/20k, so the cut should be different
+        if "sub" not in path:
+            X_sliced.append(np.transpose(downsampled_X_raw)[i][2025:2110]) #cutter måskeke for meget af
+        else:
+            X_sliced.append(np.transpose(downsampled_X_raw)[i][4025:4110])
+            
     X_sliced = np.transpose(np.array(X_sliced))
-
     X = X_sliced
+
     return X_raw,y, X, groups
 
 def delete_frames(X,y):
-    # Deleting frames with tag of 3,4,5 or 6, PA: 1, AP: 2
+    # Deleting frames with tag of 3,4,5 or 6. PA: 1, AP: 2
     indices_to_remove = [i for i in range(len(y)) if y[i] in [3, 4, 5, 6]]
     X = np.delete(np.transpose(X), indices_to_remove, axis=0)
     y = [y[i] for i in range(len(y)) if i not in indices_to_remove]
@@ -142,6 +124,7 @@ def get_all_data(filelist):
         
         if subject not in list_subjects:
             list_subjects.append(subject)
+    list_subjects.insert(0,filelist_idx0[39:45])
     filelist.insert(0,filelist_idx0)
     X = X_first
 
@@ -244,6 +227,9 @@ def other_X(X):
     X_amplitude = np.max(X, axis=0) - np.min(X, axis=0)
     X_amplitude = X_amplitude.reshape(-1, 1)
 
-    
-    
-    return X_amplitude
+    max_indices = np.argmax(X, axis=0)
+    X_latency = max_indices.reshape(-1, 1)
+    # Concatenate X_amplitude and max_indices_column horizontally
+    X_ampl_late = np.hstack((X_amplitude, X_latency))
+
+    return X_amplitude, X_latency,X_ampl_late
