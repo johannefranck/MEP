@@ -1,31 +1,29 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import data 
-#import models 
+import models 
 #import plot_functions
 from pymatreader import read_mat
-
-"""from keras.models import Sequential
-from keras.layers import Dense, Conv1D, Flatten"""
 from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import LeaveOneOut, StratifiedKFold
 
+from keras.models import Sequential
+from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense
+
+
 
 main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
 
-"""
-path_x01666 = data.path_x0166
-path_x02299 = "/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X02299_ses-1_task-coilorientation_emg.mat"
-X,y,X_sliced = data.get_one_data(path_x02299)
 
-plt.plot(X_sliced)
-plt.show()
-"""
 
 filelist = data.get_all_paths(main_path)
 #print(filelist)
 X, y, groups, list_subjects = data.get_all_data(filelist)
+
+#X_amplitude, X_latency,X_ampl_late, X_norm = data.other_X(X)
+
+"""#How to plot
 idx = np.where(np.array(groups) == 0)
 X[idx]
 y = np.array(y)
@@ -41,13 +39,10 @@ plt.plot(np.transpose(PA), color = "blue")
 plt.plot(np.transpose(AP), color = "red")
 plt.show()
 m
+"""
 
 
-#X_amplitude, X_latency,X_ampl_late = data.other_X(X)
-#tot_scores, tot_indi_scores, mean_indi_scores = models.loo_logisticregression_prsubject(X, y, groups, onerow = False, LR = True, SVM = False)
-#print(np.mean(tot_scores))
-'''
-#print et enkelt eksempel
+'''#print et enkelt eksempel
 #path = "/mnt/projects/USS_MEP/COIL_ORIENTATION/x71487_coil_orient.mat"
 path = "/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X99909_ses-1_task-coilorientation_emg.mat"
 data1 = read_mat(path)
@@ -63,56 +58,8 @@ print("hey")
 plt.plot(X_raw)
 plt.show()
 '''
-def loo_logisticregression_prsubject_stratified(X, y, groups, onerow = False, LR = True):
-  
-    #Checking whether it is onerow, one feature ie. if it is only apmlitude or latency
-    if onerow == True:
-        X = np.array(X)
-    else:
-        X = np.array(np.transpose(X)) #np.transpose(
-    y = np.array(y)
-    groups = np.array(groups)
 
-    tot_scores = []
-    tot_indi_scores = []
-
-    intercepts = []
-    listehelp = []
-    for subject in set(groups):
-    
-        scores = []
-        
-        #for train_index, test_index in logo.split(X[temp_subject], y[temp_subject], temp_subject[0]):
-        temp_subject = np.where(groups == subject)# the subjects index's
-        temp_subject_index_list = list(range(0,len(temp_subject[0]))) # the subjects index's in a list
-
-        #find the size of the smallest class
-        n_samples = min(np.bincount(y[temp_subject])[1:])
-        listehelp.append(n_samples)
-        skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
-
-        for train_index, test_index in skf.split(X[temp_subject[0]], y[temp_subject[0]]):
-            X_train, X_test = X[temp_subject[0]][train_index], X[temp_subject[0]][test_index]
-            y_train, y_test = y[temp_subject[0]][train_index], y[temp_subject[0]][test_index]
-        
-            """for train_index_inner, test_index_inner in loo.split(X[temp_subject[0]], y[temp_subject[0]],temp_subject_index_list):
-                # select the indices among 1683 traj for subject
-                X_train, X_test = X[temp_subject[0]][train_index_inner], X[temp_subject[0]][test_index_inner]
-                y_train, y_test = y[temp_subject[0]][train_index_inner], y[temp_subject[0]][test_index_inner]
-            """
-            lr = LogisticRegression()
-            lr.fit(X_train, y_train)
-            accuracy = lr.score(X_test, y_test)
-            scores.append(accuracy)
-            tot_scores.extend(scores)
-            tot_indi_scores.append(scores)
-            mean = []
-            for i in tot_indi_scores:
-                mean.append(np.mean(i))
-            mean_indi_scores = mean
-    return tot_scores, tot_indi_scores, mean_indi_scores
-
-"""def CNN(X, y, groups):
+def CNN(X, y, groups):
     X = np.array(np.transpose(X)) #np.transpose(
     y = np.array(y)
     groups = np.array(groups)
@@ -123,7 +70,7 @@ def loo_logisticregression_prsubject_stratified(X, y, groups, onerow = False, LR
     intercepts = []
     coef_meanssss = []
     logo = LeaveOneGroupOut()
-    accs = []
+    scores = []
 
     # Create the CNN model
     # Define the input shape
@@ -134,12 +81,24 @@ def loo_logisticregression_prsubject_stratified(X, y, groups, onerow = False, LR
     kernel_size = 3
 
     model = Sequential()
-    model.add(Conv1D(filters=filters, kernel_size=kernel_size, activation='relu', input_shape=input_shape))
+    # Add a convolution layer with filters, kernel size, and ReLU activation
+    model.add(Conv1D(filters=32, kernel_size=3, activation='relu', input_shape=input_shape))
+    # Add a max pooling layer
+    model.add(MaxPooling1D(pool_size=2))
+    # Add another convolution layer with filters, kernel size, and ReLU activation
+    model.add(Conv1D(filters=64, kernel_size=3, activation='relu'))
+    # Add another max pooling layer
+    model.add(MaxPooling1D(pool_size=2))
+    # Add a fully connected flattened layer
     model.add(Flatten())
-    model.add(Dense(64, activation='relu'))
+    # Add a fully connected layer with 128 neurons and ReLU activation
+    model.add(Dense(128, activation='relu'))
+    # Add a fully connected layer with 2 neurons and softmax activation for binary classification
     model.add(Dense(1, activation='sigmoid'))
-    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    # Compile the model with categorical crossentropy loss and Adam optimizer
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
+    skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
     for subject in set(groups):
 
         #logo.get_n_splits(X, y, list(set(groups)))
@@ -148,25 +107,32 @@ def loo_logisticregression_prsubject_stratified(X, y, groups, onerow = False, LR
         #for train_index, test_index in logo.split(X[temp_subject], y[temp_subject], temp_subject[0]):
         temp_subject = np.where(groups == subject)
         test = list(range(0,len(temp_subject[0])))
-
-        for train_index, test_index in loo.split(X[temp_subject[0]], y[temp_subject[0]],test):
+        for train_index, test_index in skf.split(X[temp_subject[0]], y[temp_subject[0]]):
+            #for train_index, test_index in loo.split(X[temp_subject[0]], y[temp_subject[0]],test):
             # select the indices among 1683 traj for subject
             X_train, X_test = X[temp_subject[0]][train_index], X[temp_subject[0]][test_index]
             y_train, y_test = y[temp_subject[0]][train_index], y[temp_subject[0]][test_index]
-
+            
+            #CNN model on each fold
             model.fit(X_train, y_train, epochs=10, verbose=0)
             # Evaluate the model on the test data
             X_test, y_test = X[test_index], y[test_index]
             X_test = np.reshape(X_test, (*X_test.shape, 1))
-            _, acc = model.evaluate(X_test, y_test, verbose=0)
-            accs.append(acc)
-            # Compile the model
+            _, accuracy = model.evaluate(X_test, y_test, verbose=0)
+            scores.append(accuracy)
+            tot_scores.extend(scores)
+        tot_indi_scores.append(scores)
+        mean = []
+        for i in tot_indi_scores:
+            mean.append(np.mean(i))
+        mean_indi_scores = mean
+            
 
+    return tot_scores, tot_indi_scores, mean_indi_scores
 
+# Print the mean accuracy across all folds and subjects
+#print('Mean accuracy:', np.mean(accs))
 
-    # Print the mean accuracy across all folds and subjects
-    print('Mean accuracy:', np.mean(accs))
-"""
 
 
 
@@ -229,11 +195,13 @@ def PCA(X, explained = False, n=2, PCAs = True):# skal ind i plots
         plt.show()
 
 
-
-#X_amplitude, X_latency,X_ampl_late = data.other_X(X)
-tot_scores, tot_indi_scores, mean_indi_scores = loo_logisticregression_prsubject_stratified(X, y, groups, onerow = False)
+tot_scores, tot_indi_scores, mean_indi_scores = CNN(X, y, groups)
 
 print(np.mean(tot_scores))
+#X_amplitude, X_latency,X_ampl_late = data.other_X(X)
+#tot_scores, tot_indi_scores, mean_indi_scores = loo_logisticregression_prsubject_stratified(X_norm, y, groups, onerow = False)
+
+#print(np.mean(tot_scores))
 #score, X_train, X_test, y_train, y_test, predictions = models.logregr(X_train, X_test, y_train, y_test)
 #models.confmat(y_test, predictions, score)
 #print(score)

@@ -232,4 +232,14 @@ def other_X(X):
     # Concatenate X_amplitude and max_indices_column horizontally
     X_ampl_late = np.hstack((X_amplitude, X_latency))
 
-    return X_amplitude, X_latency,X_ampl_late
+
+    #normalized X
+    # compute minimum and maximum values along columns, because we have signals on the columns so we dont need to transpose
+    min_val = np.min(X, axis=0)
+    max_val = np.max(X, axis=0)
+
+    # normalize X using min-max scaling for each column
+    X_norm = (X - min_val) / (max_val - min_val)
+
+
+    return X_amplitude, X_latency,X_ampl_late, X_norm

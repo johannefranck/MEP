@@ -5,7 +5,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn import metrics
 from pymatreader import read_mat
-from sklearn.model_selection import LeaveOneGroupOut
+from sklearn.model_selection import LeaveOneGroupOut, StratifiedKFold
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 
@@ -110,7 +110,7 @@ def MLP(X,y):
   
 
 
-def loo_logisticregression_prsubject(X, y, groups, onerow = False, LR = False, SVM = False):
+def loo_logisticregression_prsubject(X, y, groups, onerow = False, LR = False, SVM = False):#OBS not stratified
   
   #Checking whether it is onerow, one feature ie. if it is only apmlitude or latency
   if onerow == True:
@@ -178,6 +178,54 @@ def loo_logisticregression_prsubject(X, y, groups, onerow = False, LR = False, S
   #plt.plot(np.mean(coef_meanssss,axis=0))
   return tot_scores, tot_indi_scores, mean_indi_scores
 
+
+def kfold_logisticregression_prsubject_stratified(X, y, groups, onerow = False, LR = True): # OBS Kfold
+  
+    #Checking whether it is onerow, one feature ie. if it is only apmlitude or latency
+    if onerow == True:
+        X = np.array(X)
+    else:
+        X = np.array(np.transpose(X)) #np.transpose(
+    y = np.array(y)
+    groups = np.array(groups)
+
+    tot_scores = []
+    tot_indi_scores = []
+    for subject in set(groups):
+    
+        scores = []
+        
+        temp_subject = np.where(groups == subject)# the subjects index's
+        temp_subject_index_list = list(range(0,len(temp_subject[0]))) # the subjects index's in a list
+
+        #find the size of the smallest class
+        ##n_samples = min(np.bincount(y[temp_subject])[1:])
+
+        skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+
+        for train_index, test_index in skf.split(X[temp_subject[0]], y[temp_subject[0]]):
+            X_train, X_test = X[temp_subject[0]][train_index], X[temp_subject[0]][test_index]
+            y_train, y_test = y[temp_subject[0]][train_index], y[temp_subject[0]][test_index]
+        
+            """for train_index_inner, test_index_inner in loo.split(X[temp_subject[0]], y[temp_subject[0]],temp_subject_index_list):
+                # select the indices among 1683 traj for subject
+                X_train, X_test = X[temp_subject[0]][train_index_inner], X[temp_subject[0]][test_index_inner]
+                y_train, y_test = y[temp_subject[0]][train_index_inner], y[temp_subject[0]][test_index_inner]
+            """
+            lr = LogisticRegression()
+            lr.fit(X_train, y_train)
+            accuracy = lr.score(X_test, y_test)
+            scores.append(accuracy)
+            tot_scores.extend(scores)
+        tot_indi_scores.append(scores)
+        mean = []
+        for i in tot_indi_scores:
+            mean.append(np.mean(i))
+        mean_indi_scores = mean
+    return tot_scores, tot_indi_scores, mean_indi_scores
+
+"""
+Run logistic regression modle
 import data 
 from pymatreader import read_mat
 main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
@@ -187,7 +235,7 @@ X, y, groups, list_subjects = data.get_all_data(filelist) #np.shape(X)=(85,1683)
 #X_amplitude, X_latency,X_ampl_late = data.other_X(X)
 tot_scores, tot_indi_scores, mean_indi_scores = loo_logisticregression_prsubject(X, y, groups, onerow = False, LR = True, SVM = False)
 print(np.mean(tot_scores))
-
+"""
 
 #Run models
 #X,y,X_sliced = data.get_one_data(path_x01666)
