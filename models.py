@@ -5,13 +5,10 @@ import pandas as pd
 import seaborn as sns
 from sklearn import metrics
 from pymatreader import read_mat
-from sklearn.model_selection import LeaveOneGroupOut, StratifiedKFold
+from sklearn.model_selection import LeaveOneGroupOut, StratifiedKFold, StratifiedShuffleSplit
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
-
-#import data
-
-#path_x01666 = data.path_x01666
+from sklearn.model_selection import cross_val_score
 
 
 #### Logistic regression model
@@ -185,13 +182,13 @@ def kfold_logisticregression_prsubject_stratified(X, y, groups, onerow = False, 
     if onerow == True:
         X = np.array(X)
     else:
-        X = np.array(np.transpose(X)) #np.transpose(
+        X = np.array(np.transpose(X))
     y = np.array(y)
     groups = np.array(groups)
 
     tot_scores = []
     tot_indi_scores = []
-    for subject in set(groups):
+    for subject in set(groups): #{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, ...}
     
         scores = []
         
@@ -224,23 +221,26 @@ def kfold_logisticregression_prsubject_stratified(X, y, groups, onerow = False, 
         mean_indi_scores = mean
     return tot_scores, tot_indi_scores, mean_indi_scores
 
-"""
-Run logistic regression modle
-import data 
-from pymatreader import read_mat
-main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
-filelist = data.get_all_paths(main_path)
-#print(filelist)
-X, y, groups, list_subjects = data.get_all_data(filelist) #np.shape(X)=(85,1683)
-#X_amplitude, X_latency,X_ampl_late = data.other_X(X)
-tot_scores, tot_indi_scores, mean_indi_scores = loo_logisticregression_prsubject(X, y, groups, onerow = False, LR = True, SVM = False)
-print(np.mean(tot_scores))
-"""
+def k10fold_logreg_generel_model(X, y): #normaliseret? kald Xnorm
+    # 10fold stratified cross validation for logistic regression
+    # Returns the accuracy for the 10 folds, and the mean score
+    X = np.array(np.transpose(X)) 
+    y = np.array(y)
 
-#Run models
-#X,y,X_sliced = data.get_one_data(path_x01666)
+    scores = []
+    skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
 
-#logregscore, x_train, x_test, y_train, y_test, predictions = logregr(X_sliced,y)
-#print(f"logregression score: {logregscore}")
-#MLPscore, x_train, x_test, y_train, y_test, predictions, predictions_prob = MLP(X_sliced,y)
-#print(f"MLP score: {MLPscore}")
+    for train_index, test_index in skf.split(X, y):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+    
+        lr = LogisticRegression()
+        lr.fit(X_train, y_train)
+        accuracy = lr.score(X_test, y_test)
+        scores.append(accuracy)
+
+    return scores, np.mean(scores)
+
+
+
+
