@@ -4,7 +4,7 @@ import data
 import random
 
 
-def plot_groups(X, groups, specifics, list_subjects):
+def plot_groups(X, groups, list_subjects, specifics):
     # Plotting the different subject MEP signals in the same plot, with time on the x axis
     # set the specifics to ['all'] for all subjects otherwise specify: i.e. [3,13,23]
 
@@ -58,7 +58,7 @@ def plot_groups(X, groups, specifics, list_subjects):
 
 
 
-def plot_coil(X,y,groups, mean, subject):
+def plot_coil(X,y,list_subjects,groups, mean, subject):
     #plotting coil orientations as PA (blue) and AP (red)
     #specify mean = TRUE if the mean of AP and PA is wanted, otherwise FALSE, subject is set to None
     X = np.array(np.transpose(X))
@@ -91,7 +91,7 @@ def plot_coil(X,y,groups, mean, subject):
     plt.show()
 
 
-def plot_subject_coil(X,y,groups,mean,subject):
+def plot_subject_coil(X,y,list_subjects,groups,mean,subject):
     #plot a subject with PA and AP 
     #mean = True / False, set subject as int for wanted subject
     X = np.array(np.transpose(X))
@@ -101,37 +101,79 @@ def plot_subject_coil(X,y,groups,mean,subject):
     group_i_where=np.where(groups == subject)[0]
     yi = y[list(group_i_where)]
     Xi = X[list(group_i_where)]
-    plot_coil(np.transpose(Xi),yi,groups,mean,subject)
+    plot_coil(np.transpose(Xi),yi,list_subjects,groups,mean,subject)
 
 
-
-main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
-filelist = data.get_all_paths(main_path)
-X, y, groups, list_subjects = data.get_all_data(filelist)
-
-#what do you want to plot?
-#plot_groups(X, groups, specifics = [5,18,19,31,32], list_subjects=list_subjects)
-#plot_coil(X,y,groups, mean = False, subject = None)
-
-subject = 0 # set specific subject
-plot_subject_coil(X,y,groups,mean=False,subject=subject)
+def barplot(groups, mean_indi_scores, acc): #husk at tjek om onerow er slået til eller ej
+    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
+    axs.set_xlabel('Group number')
+    axs.set_ylabel('Mean accuracy')
+    acc = acc * 100
+    axs.set_title(f'Mean accuracy pr subject, trained on X_latency, with overall mean accuracy: {acc:.2f}%')
+    plt.bar(np.sort(list(set(groups))),mean_indi_scores)
+    plt.show()
 
 
+def PCA(X, explained = False, n=2, PCAs = True):# skal ind i plots
+    from sklearn.decomposition import PCA
+    if PCAs == True:
+        # Create a PCA object with the desired number of components
+        pca = PCA(n_components=n)
+
+        # Fit the PCA model to the data and transform the data to the new space
+        X_pca = pca.fit_transform(X)
+
+        # The transformed data will now have two columns, which are the principal components
+        # Create a scatter plot of the transformed data
+        #plt.scatter(X_pca[:, 0], X_pca[:, 1])
+
+        ''' # Add axis labels and a title
+        plt.xlabel('PC1')
+        plt.ylabel('PC2')
+        plt.title('PCA Scatter Plot')
+
+        # Show the plot
+        plt.show()'''
+        
+        plt.plot(X_pca[:, 0], label = "PC1")
+        plt.plot(X_pca[:, 1], label = "PC2")
+        plt.legend(loc="upper left")
+        plt.title('Principal components')
+        plt.xlabel('Time')
+        plt.ylabel('Value')
+        plt.show()
+
+        
+
+    if explained == True:
+        #Fit the PCA model to the data
+        pca.fit(X)
+
+        # Get the explained variance ratios
+        variance_ratios = pca.explained_variance_ratio_
+
+        # Create a bar plot of the explained variance ratios
+        plt.bar(range(len(variance_ratios)), variance_ratios)
+
+        # Add axis labels and a title
+        plt.xlabel('Principal Component')
+        plt.ylabel('Explained Variance Ratio')
+        plt.title('Explained Variance Ratio by Principal Component')
+
+        # Show the plot
+        plt.show()
 
 
+if __name__ == "__main__":
 
+    main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
+    filelist = data.get_all_paths(main_path)
+    X, y, groups, list_subjects = data.get_all_data(filelist)
 
+    #what do you want to plot?
+    #plot_groups(X, groups, list_subjects=list_subjects, specifics = [5,18,19,31,32])
+    #plot_coil(X,y, list_subjects, groups, mean = False, subject = None)
 
-
-
-
-
-'''
-groups = data.get_all_data(filelist)
-path = "sub-X40027_ses-1_task-coilorientation_emg"
-X,y,X_sliced = data.get_one_data(path, groupnr = 24, groups=groups)
-
-plt.plot(X)
-plt.show()
-'''
+    subject = 1 # set specific subject
+    plot_subject_coil(X,y,list_subjects,groups,mean=False,subject=subject)
 
