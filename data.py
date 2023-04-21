@@ -32,8 +32,9 @@ def get_all_paths(main_path):
     
     # Removes xlsx files
     filelist = [ x for x in filelist if "xlsx" not in x ] 
-    filelist = [ x for x in filelist if "02035" not in x ] #bad signal
-    filelist = [ x for x in filelist if "96343" not in x ] #bad signal
+    filelist = [ x for x in filelist if "71487" not in x ] #noisy signal
+    filelist = [ x for x in filelist if "34646" not in x ] #noisy signal
+    filelist = [ x for x in filelist if "40027" not in x ] #noisy signal
 
     filelist = np.sort(filelist).tolist()
     return filelist
@@ -133,54 +134,6 @@ def get_all_data(filelist):
     return X, y, groups, list_subjects
     
 
-
-def plot_groups(X, groups, specifics):
-    # Plotting the different subject MEP signals in the same plot, with time on the x axis
-
-    # Color pre-definitions
-    colors = plt.rcParams['axes.prop_cycle'].by_key()['color'] # get a list of colors from the default color cycle in matplotlib
-    color_dict = {i: colors[i%len(colors)] for i in range(52)} # create a dictionary with keys from 0 to 51, and values as different colors from the matplotlib library
-
-    # Get the time array with a sampling rate of 2000 Hz
-    STAA = 7.5 # sliced_time_after_artifact, here it is 15 timepoints, which is the same a 7.5 ms
-    time = np.arange(np.transpose(X).shape[1]) / 2000 * 1000 + STAA
-
-    # Create the figure and axes objects
-    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
-
-    # Plot the data for each group
-    lines = []
-    if specifics != ["all"]:
-        idx = 0
-        for group in set(specifics):
-            traj_ids = np.where(np.array(groups) == group)[0]
-            for i in range(len(traj_ids)):
-                line, = axs.plot(time, np.transpose(X)[traj_ids[i], :], c=color_dict[group+idx], alpha=0.5)
-                lines.append(line)
-            idx += 1
-            colors
-    else:
-        for group in set(groups):
-            idx = np.where(np.array(groups) == group)[0]
-            for i in range(len(idx)):
-                line, = axs.plot(time, np.transpose(X)[idx[i], :], c=color_dict[group], alpha=0.5)
-                lines.append(line)
-        
-
-    # Set the axis labels and title
-    axs.set_xlabel('Time (ms)')
-    axs.set_ylabel('MEP signal')
-    axs.set_title('MEP signals by group')
-
-    # Add the legend
-    if specifics != ["all"]:
-        groups = specifics
-    legend_labels = list(set(groups))
-    axs.legend(lines, legend_labels, loc='best', prop={'size': 'xx-small'}, title='Group', title_fontsize='small', framealpha=0.5, facecolor='white', edgecolor='black', labelcolor=colors)
-
-    # Show the plot
-    plt.show()
-
 def frame_split(X,y):
     # Splitting the frames (AP and PA), and plotting their mean compared to each other
     C = npi.group_by(y).split(np.transpose(X))
@@ -232,14 +185,73 @@ def other_X(X):
     # Concatenate X_amplitude and max_indices_column horizontally
     X_ampl_late = np.hstack((X_amplitude, X_latency))
 
+    # Diffentiate X, Note that the first element of each row will be lost after differentiation since there is no previous element to calculate the difference with.    X_diff = np.diff(X, axis=1)
+    X_diff = np.diff(X, axis=1)
 
+
+
+    fs = 2000  # Sample rate (Hz)
+
+    
+    """for i in range(np.transpose(X).shape[0]):
+        # Compute the power spectrum for signal i
+        ps = np.abs(np.fft.rfft(np.transpose(X)[i])) ** 2
+        
+        # Compute the corresponding frequencies
+        freqs = np.fft.rfftfreq(len(np.transpose(X)[i]), d=1/fs)
+        
+        # Plot the power spectrum for signal i
+        plt.plot(freqs, ps)
+        plt.xlabel('Frequency (Hz)')
+        plt.ylabel('Power')
+        plt.title(f'Power spectrum for signal {i+1}')
+        plt.show()"""
+    X_fft = np.fft.fft(X, axis=0)# virker ikke
+    return X_amplitude, X_latency,X_ampl_late, X_diff,X_fft
+
+def normalize_by_peak_latency(X):
+    X = np.transpose(X)
+    # Calculate the peak latency for each signal
+    peak_latencies = np.argmax(X, axis=1)
+
+    # Calculate the offset needed to shift the peak to index 20
+    offset = 20 - peak_latencies
+
+    # Shift each signal by the corresponding offset
+    X_normalized = np.zeros(X.shape)
+    for i, row in enumerate(X):
+        X_normalized[i, :] = np.roll(row, offset[i])
+    # taking the max distance to the peak(offset), and slice that number of elements. So it is ensured that it doesnt roll to the end of the signal. 
+    X_normalized = X_normalized[:, :offset[np.argmax(offset)]]
+
+    return np.transpose(X_normalized)
+
+
+def normalize_X(X, groups):
     #normalized X
-    # compute minimum and maximum values along columns, because we have signals on the columns so we dont need to transpose
-    min_val = np.min(X, axis=0)
-    max_val = np.max(X, axis=0)
+    subjects = np.unique(groups)
+    X_norm = []
+    # Normalize X for each subject
+    for subj in subjects:
+        # Extract rows for this subject
+        X_subj = np.transpose(np.transpose(X)[groups == subj, :])
+        X_subj_t = np.transpose(X_subj)
 
-    # normalize X using min-max scaling for each column
-    X_norm = (X - min_val) / (max_val - min_val)
+
+        # compute minimum and maximum values along columns
+        max_abs = np.max(np.abs(X_subj_t)).reshape((-1, 1))
+        min_abs = np.min(np.abs(X_subj_t)).reshape((-1, 1))
+        new_max = 1
 
 
-    return X_amplitude, X_latency,X_ampl_late, X_norm
+        # Scale the matrix using min-max normalization
+        X_subject_norm = (X_subj / max_abs) * new_max
+        
+        #Concatenate here so X_norm get all the matrix from X_subject_norm
+        X_norm.append(np.transpose(X_subject_norm))
+
+
+    X_norm = np.transpose(np.vstack(X_norm))
+
+    X_norm = normalize_by_peak_latency(X_norm)
+    return X_norm
