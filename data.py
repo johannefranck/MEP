@@ -7,7 +7,7 @@ from sklearn.model_selection import GroupShuffleSplit
 from sklearn import metrics
 from sklearn.model_selection import GroupKFold
 from sklearn.svm import SVC
-
+import plot_functions
 from pymatreader import read_mat
 import os
 from scipy import signal
@@ -15,8 +15,8 @@ import numpy_indexed as npi
 
 
 #path to all the files
-main_path ="/mnt/projects/USS_MEP/COIL_ORIENTATION"
-path_x01666 = "/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X01666_ses-1_task-coilorientation_emg.mat"
+#main_path ="/mnt/projects/USS_MEP/COIL_ORIENTATION"
+#path_x01666 = "/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X01666_ses-1_task-coilorientation_emg.mat"
 
 
 def get_all_paths(main_path):
@@ -32,9 +32,9 @@ def get_all_paths(main_path):
     
     # Removes xlsx files
     filelist = [ x for x in filelist if "xlsx" not in x ] 
-    filelist = [ x for x in filelist if "71487" not in x ] #noisy signal
-    filelist = [ x for x in filelist if "34646" not in x ] #noisy signal
-    filelist = [ x for x in filelist if "40027" not in x ] #noisy signal
+    #filelist = [ x for x in filelist if "71487" not in x ] #noisy signal
+    #filelist = [ x for x in filelist if "34646" not in x ] #noisy signal
+    #filelist = [ x for x in filelist if "40027" not in x ] #noisy signal
 
     filelist = np.sort(filelist).tolist()
     return filelist
@@ -116,11 +116,12 @@ def get_all_data(filelist):
         if subject in filelist[k-1]:
             groupnr = groupnr - 1
 
+        #print(f"Processing subject: {subject}, index: {k}, groupnr: {groupnr}")
         # Slice each subject
         X_raw, y_loop, X, groups = get_one_data(path, groupnr, groups) 
         groupnr += 1
         if len(X) != 0:
-            X_first = np.concatenate((X, X_first),axis=1)
+            X_first = np.concatenate((X_first, X),axis=1)
             y.extend(y_loop)
         
         if subject not in list_subjects:
@@ -222,11 +223,12 @@ def normalize_by_peak_latency(X):
     for i, row in enumerate(X):
         X_normalized[i, :] = np.roll(row, offset[i])
     # taking the max distance to the peak(offset), and slice that number of elements. So it is ensured that it doesnt roll to the end of the signal. 
-    X_normalized = X_normalized[:, :offset[np.argmax(offset)]]
+    X_normalized = X_normalized[:, :offset[20]] #-np.argmax(offset)
+    X_normalized = np.transpose(X_normalized)
+    return X_normalized
 
-    return np.transpose(X_normalized)
-
-
+"""
+Denne funktion normalisere inden for hvert subject
 def normalize_X(X, groups):
     #normalized X
     subjects = np.unique(groups)
@@ -255,3 +257,80 @@ def normalize_X(X, groups):
 
     X_norm = normalize_by_peak_latency(X_norm)
     return X_norm
+"""
+"""Denne virker ikke helt, fandt vi ud af til m'det med krissi
+def normalize_X(X, groups):
+    #normalized X
+    subjects = np.unique(groups)
+    X_norm = []
+    n_signals = X.shape[1]
+    # Normalize X for each subject
+    for signal in range(n_signals) :
+        # Extract rows for this subject
+        X_signal = np.transpose(X)[signal]
+        
+
+
+        # compute minimum and maximum values along columns
+        max_abs = np.max(np.abs(X_signal)).reshape((-1, 1))
+        min_abs = np.min(np.abs(X_signal)).reshape((-1, 1))
+        new_max = 1
+
+
+        # Scale the matrix using min-max normalization
+        X_signal_norm = (X_signal / max_abs[0]) * new_max
+        
+        #Concatenate here so X_norm get all the matrix from X_subject_norm
+        X_norm.append(np.transpose(X_signal_norm))
+    
+    signal_matrix = np.zeros((1583, 85))
+
+    # stack the signals into the matrix
+    for i, signal in enumerate(X_norm):
+        signal_matrix[i, :] = signal
+    X_norm_signals = np.transpose(signal_matrix)
+    #X_norm = np.vstack(X_norm)
+
+    X_norm = normalize_by_peak_latency(X_norm_signals)
+    return X_norm"""
+
+def normalize_X(X, groups):
+    #normalized X
+    subjects = np.unique(groups)
+    X_norm = []
+    n_signals = X.shape[1]
+    # Normalize X for each subject
+    for signal in range(n_signals):
+        # extract the signal
+        X_signal = X[:, signal]
+        
+        # compute the maximum and minimum values of the signal
+        max_val = np.max(X_signal)
+        min_val = np.min(X_signal)
+        
+        # add a small epsilon value to max_val to avoid division by zero
+        epsilon = 1e-8
+        max_val += epsilon
+        
+        # scale the signal using min-max normalization
+        #X_signal_norm = (X_signal - min_val) / (max_val - min_val)
+        X_signal_norm = 2 * (X_signal - np.min(X_signal)) / (np.max(X_signal) - np.min(X_signal)) - 1
+
+        
+        # append the normalized signal to X_norm
+        X_norm.append(X_signal_norm)
+        
+    # stack the normalized signals into a matrix
+    X_norm_signals = np.vstack(X_norm).T
+
+    X_norm = normalize_by_peak_latency(X_norm_signals)
+    return X_norm
+if __name__ == "__main__":
+    main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
+    filelist = get_all_paths(main_path)
+    X, y, groups, list_subjects = get_all_data(filelist)
+
+    X_norm = normalize_X(X, groups)
+    plot_functions.plot_subject_coil(X_norm,y,list_subjects,groups,False,12)
+    k = 1
+    #X_amplitude, X_latency,X_ampl_late, X_diff,X_fft = data.other_X(X_norm)

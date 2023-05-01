@@ -2,12 +2,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import data 
 import random
+import seaborn as sns
 
 
 def plot_groups(X, groups, list_subjects, specifics):
     # Plotting the different subject MEP signals in the same plot, with time on the x axis
     # set the specifics to ['all'] for all subjects otherwise specify: i.e. [3,13,23]
-
+    sns.set_style("white")
     # Color pre-definitions
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color'] # get a list of colors from the default color cycle in matplotlib
     # Create a dictionary with 50 unique color keys
@@ -15,7 +16,7 @@ def plot_groups(X, groups, list_subjects, specifics):
 
     # Get the time array with a sampling rate of 2000 Hz
     STAA = 12.5 # sliced_time_after_artifact, here it is 25 timepoints, which is the same a 12.5 ms
-    time = np.arange(np.transpose(X).shape[1]) / 2000 * 1000 + STAA
+    time = np.arange(X.shape[0]) / 2000 * 1000 + STAA
 
     # Create the figure and axes objects
     fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
@@ -52,13 +53,14 @@ def plot_groups(X, groups, list_subjects, specifics):
     legend_labels = []
     for i in range(len(groups)):
         legend_labels.append(list_subjects[groups[i]]+str(", ")+str(groups[i]))
-    axs.legend(lines, legend_labels, loc='best', prop={'size': 'xx-small'}, title='Subject, groupnr', title_fontsize='small', framealpha=0.5, facecolor='white', edgecolor='black', labelcolor=colors)
+    axs.legend(lines, legend_labels, loc='best', prop={'size': 'xx-small'}, title='Subject, nr', title_fontsize='small', framealpha=0.5, facecolor='white', edgecolor='black', labelcolor=colors)
 
     plt.show()
 
 
 
 def plot_coil(X,y,list_subjects,groups, mean, subject):
+    sns.set_style("white")
     #plotting coil orientations as PA (blue) and AP (red)
     #specify mean = TRUE if the mean of AP and PA is wanted, otherwise FALSE, subject is set to None
     X = np.array(np.transpose(X))
@@ -67,31 +69,39 @@ def plot_coil(X,y,list_subjects,groups, mean, subject):
 
     PA = np.transpose(X[np.where(y==1)])
     AP = np.transpose(X[np.where(y==2)])
+    print(len(np.transpose(PA)))
+    print(len(np.transpose(AP)))
+
+    STAA = 12.5  # sliced_time_after_artifact
+    n_data_points = X.shape[1]
+    time = np.arange(n_data_points) / 2000 * 1000 + STAA
+
 
     fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
     axs.set_xlabel('Time (ms)')
     axs.set_ylabel('mV')
     if type(subject)==int:
-        axs.set_title('MEP signals by Coil orientarion, subject ' + str(list_subjects[subject]) + ', groupnr: ' + str(subject) + ', trajs: ' + str(len(y)))
+        axs.set_title('MEP signals by Coil orientation, subject ' + str(list_subjects[subject]) + ', subject nr: ' + str(subject) + ', trajs: ' + str(len(y)))
     # if no specific subject is specified
     else:
-        axs.set_title('MEP signals by Coil orientarion' + ', total PAs: ' + str(len(np.transpose(PA))) + ', total APs: ' + str(len(np.transpose(AP))))
+        axs.set_title('MEP signals by Coil orientation' + ', total PAs: ' + str(len(np.transpose(PA))) + ', total APs: ' + str(len(np.transpose(AP))))
 
     if mean == True:
-        axs.set_title('MEP signals by Coil orientarion, Mean')
-        plt.plot(np.mean(PA, axis = 1), color = 'blue')
-        plt.plot(np.mean(AP, axis = 1), color = 'red')
+        axs.set_title('MEP signals by Coil orientation, Mean')
+        plt.plot(time, np.mean(PA, axis = 1), color = 'blue')
+        plt.plot(time, np.mean(AP, axis = 1), color = 'red')
     else:
-        plt.plot(PA, color = 'blue')
-        plt.plot(AP, color = 'red')
+        plt.plot(time, PA, color = 'blue')
+        plt.plot(time, AP, color = 'red')
 
 
-    axs.legend(['PA','AP'], loc='best', title_fontsize='large', framealpha=0.5, facecolor='white', edgecolor='black', labelcolor=['blue','red'])
+    axs.legend(['PA : '+str(len(np.transpose(PA))),'AP : '+str(len(np.transpose(AP)))], loc='best', title_fontsize='large', framealpha=0.5, facecolor='white', edgecolor='black', labelcolor=['blue','red'])
 
     plt.show()
 
 
 def plot_subject_coil(X,y,list_subjects,groups,mean,subject):
+    sns.set_style("white")
     #plot a subject with PA and AP 
     #mean = True / False, set subject as int for wanted subject
     X = np.array(np.transpose(X))
@@ -105,6 +115,7 @@ def plot_subject_coil(X,y,list_subjects,groups,mean,subject):
 
 
 def barplot(groups, mean_indi_scores, acc): #husk at tjek om onerow er slået til eller ej
+    sns.set_style("white")
     fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
     axs.set_xlabel('Group number')
     axs.set_ylabel('Mean accuracy')
@@ -115,6 +126,7 @@ def barplot(groups, mean_indi_scores, acc): #husk at tjek om onerow er slået ti
 
 
 def PCA(X, explained = False, n=2, PCAs = True):# skal ind i plots
+    sns.set_style("white")
     from sklearn.decomposition import PCA
     if PCAs == True:
         # Create a PCA object with the desired number of components
@@ -139,7 +151,7 @@ def PCA(X, explained = False, n=2, PCAs = True):# skal ind i plots
         plt.plot(X_pca[:, 1], label = "PC2")
         plt.legend(loc="upper left")
         plt.title('Principal components')
-        plt.xlabel('Time')
+        plt.xlabel('Sample points')
         plt.ylabel('Value')
         plt.show()
 
@@ -172,8 +184,9 @@ if __name__ == "__main__":
 
     #what do you want to plot?
     #plot_groups(X, groups, list_subjects=list_subjects, specifics = [5,18,19,31,32])
-    #plot_coil(X,y, list_subjects, groups, mean = False, subject = None)
+    #plot_coil(X,y, list_subjects, groups, mean = True, subject = None)
 
-    subject = 1 # set specific subject
-    plot_subject_coil(X,y,list_subjects,groups,mean=False,subject=subject)
+    for i in range(0, 4):
+        subject = i # set specific subject
+        plot_subject_coil(X,y,list_subjects,groups,mean=False,subject=subject)
 
