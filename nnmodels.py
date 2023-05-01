@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 import data
+import torch.nn.functional as F
 
 class SimpleRNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, num_layers=1):
@@ -35,21 +36,34 @@ class SimpleRNN(nn.Module):
 class CNN(nn.Module):
     def __init__(self):
         super(CNN, self).__init__()
-        self.conv1 = nn.Conv1d(in_channels=1, out_channels=32, kernel_size=3)
-        self.pool = nn.MaxPool1d(kernel_size=2)
-        self.conv2 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3)
-        self.fc1 = nn.Linear(in_features=1216, out_features=128)
+        self.conv1 = nn.Conv1d(in_channels=1, out_channels=16, kernel_size=5, padding=2)
+        self.pool1 = nn.MaxPool1d(kernel_size=2)
+        self.conv2 = nn.Conv1d(in_channels=16, out_channels=32, kernel_size=5, padding=2)
+        self.pool2 = nn.MaxPool1d(kernel_size=2)
+        self.conv3 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=5, padding=2)
+        self.pool3 = nn.MaxPool1d(kernel_size=2)
+        self.fc1 = nn.Linear(in_features=64*10, out_features=128)
+        self.dropout = nn.Dropout(p=0.5)
         self.fc2 = nn.Linear(in_features=128, out_features=1)
-        #Bayesian optimazation
     def forward(self, x):
-        x = self.pool(nn.functional.relu(self.conv1(x)))
-        x = self.pool(nn.functional.relu(self.conv2(x)))
+
+        # Convolutional layers
+        x = nn.functional.relu(self.conv1(x))
+        x = self.pool1(x)
+        x = nn.functional.relu(self.conv2(x))
+        x = self.pool2(x)
+        x = nn.functional.relu(self.conv3(x))
+        x = self.pool3(x)
+
+        # Flatten and fully connected layers
         x = torch.flatten(x, start_dim=1)
         x = nn.functional.relu(self.fc1(x))
-        if self.training:
-            x = nn.functional.sigmoid(self.fc2(x))
-        else:
-            x = nn.functional.sigmoid(self.fc2(x))
+        x = self.dropout(x)
+        x = self.fc2(x)
+
+        # Apply sigmoid activation function to the output
+        x = torch.sigmoid(x)
+
         return x
 
 class SimpleLSTM(nn.Module):
