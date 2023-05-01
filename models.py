@@ -172,7 +172,11 @@ def loo_logisticregression_prsubject(X, y, groups, onerow = False, LR = False, S
     for i in tot_indi_scores:
       mean.append(np.mean(i))
     mean_indi_scores = mean
-  #plt.plot(np.mean(coef_meanssss,axis=0))
+  time = np.linspace(12.5, 42.5, coef_meanssss[0])
+  plt.xlabel('Time (ms)')
+  plt.ylabel('mV')
+  plt.title('Mean Coefficient Weight Vector per Subject')
+  plt.plot(time, np.mean(coef_meanssss,axis=0))
   return tot_scores, tot_indi_scores, mean_indi_scores
 
 
@@ -188,6 +192,9 @@ def kfold_logisticregression_prsubject_stratified(X, y, groups, onerow = False, 
 
     tot_scores = []
     tot_indi_scores = []
+    Coefficients = []
+    intercepts = []
+    coef_meanssss = []
     for subject in set(groups): #{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, ...}
     
         scores = []
@@ -212,6 +219,8 @@ def kfold_logisticregression_prsubject_stratified(X, y, groups, onerow = False, 
             lr = LogisticRegression()
             lr.fit(X_train, y_train)
             accuracy = lr.score(X_test, y_test)
+            coef = lr.coef_ 
+            Coefficients.append(coef[0])
             scores.append(accuracy)
             tot_scores.extend(scores)
         tot_indi_scores.append(scores)
@@ -219,12 +228,16 @@ def kfold_logisticregression_prsubject_stratified(X, y, groups, onerow = False, 
         for i in tot_indi_scores:
             mean.append(np.mean(i))
         mean_indi_scores = mean
+    plt.plot(Coefficients)
     return tot_scores, tot_indi_scores, mean_indi_scores
 
-def k10fold_logreg_generel_model(X, y): #normaliseret? kald Xnorm
+def k10fold_logreg_generel_model(X, y, onerow =False): #normaliseret? kald Xnorm
     # 10fold stratified cross validation for logistic regression
     # Returns the accuracy for the 10 folds, and the mean score
-    X = np.array(np.transpose(X)) 
+    if onerow == True:
+        X = np.array(X)
+    else:
+        X = np.array(np.transpose(X))
     y = np.array(y)
 
     scores = []
