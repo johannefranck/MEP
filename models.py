@@ -180,7 +180,7 @@ def loo_logisticregression_prsubject(X, y, groups, onerow = False, LR = False, S
   return tot_scores, tot_indi_scores, mean_indi_scores
 
 
-def kfold_logisticregression_prsubject_stratified(X, y, groups, onerow = False, LR = True):
+def kfold_logisticregression_prsubject_stratified(X, y, groups, onerow = False):
     """
     Logistic Regression model doing 10-fold cross validation (stratified).
     Trains one model pr subject
