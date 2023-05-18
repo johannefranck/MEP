@@ -3,6 +3,7 @@ import numpy as np
 import data 
 import random
 import seaborn as sns
+from sklearn import metrics
 
 
 def plot_groups(X, groups, list_subjects, specifics):
@@ -114,13 +115,22 @@ def plot_subject_coil(X,y,list_subjects,groups,mean,subject):
     plot_coil(np.transpose(Xi),yi,list_subjects,groups,mean,subject)
 
 
-def barplot(groups, mean_indi_scores, acc): #husk at tjek om onerow er slået til eller ej
+def barplot(groups, mean_indi_scores, acc, xtype_title): #husk at tjek om onerow er slået til eller ej
     sns.set_style("white")
     fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
     axs.set_xlabel('Group number')
     axs.set_ylabel('Mean accuracy')
     acc = acc * 100
-    axs.set_title(f'Mean accuracy pr subject, trained on X_latency, with overall mean accuracy: {acc:.2f}%')
+    if xtype_title == 'X':
+        axs.set_title(f'Mean accuracy pr subject, with overall mean accuracy: {acc:.2f}% \n X')
+    elif xtype_title == 'X_norm':
+        axs.set_title(f'Mean accuracy pr subject, with overall mean accuracy: {acc:.2f}% \n X normalized')
+    elif xtype_title == 'X_amplitude':
+        axs.set_title(f'Mean accuracy pr subject, with overall mean accuracy: {acc:.2f}% \n Amplitude normalized')
+    elif xtype_title == 'X_latency':
+        axs.set_title(f'Mean accuracy pr subject, with overall mean accuracy: {acc:.2f}% \n Latency normalized')
+    elif xtype_title == 'X_ampl_late':
+        axs.set_title(f'Mean accuracy pr subject, with overall mean accuracy: {acc:.2f}% \n Only Amplitude and Latency')
     plt.bar(np.sort(list(set(groups))),mean_indi_scores)
     plt.show()
 
@@ -175,6 +185,27 @@ def PCA(X, explained = False, n=2, PCAs = True):# skal ind i plots
         # Show the plot
         plt.show()
 
+def confmat(y_test, predictions, title):
+    cm = metrics.confusion_matrix(y_test, predictions)
+    print(cm)  
+
+    plt.figure(figsize=(5,5))
+    plt.imshow(cm, interpolation='nearest', cmap='RdBu')
+    plt.title(title, size = 15) 
+    plt.colorbar()
+    tick_marks = np.arange(2)
+    plt.xticks(tick_marks, ["PA: 1", "AP: 2"], rotation=45, size = 10)
+    plt.yticks(tick_marks, ["PA: 1", "AP: 2"], size = 10)
+    plt.tight_layout()
+    plt.ylabel('Actual label', size = 10)
+    plt.xlabel('Predicted label', size = 10)
+    width, height = cm.shape
+    for x in range(width):
+      for y in range(height):
+        plt.annotate(str(cm[x][y]), xy=(y, x), 
+        horizontalalignment='center',
+        verticalalignment='center')
+    plt.show()
 
 if __name__ == "__main__":
 
@@ -186,7 +217,7 @@ if __name__ == "__main__":
     #plot_groups(X, groups, list_subjects=list_subjects, specifics = [5,18,19,31,32])
     #plot_coil(X,y, list_subjects, groups, mean = True, subject = None)
 
-    for i in range(0, 4):
+    for i in range(7,15):
         subject = i # set specific subject
         plot_subject_coil(X,y,list_subjects,groups,mean=False,subject=subject)
 

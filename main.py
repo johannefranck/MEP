@@ -8,23 +8,19 @@ from sklearn.model_selection import LeaveOneGroupOut
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import LeaveOneOut, StratifiedKFold
 
-from keras.models import Sequential
-from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense
+#from keras.models import Sequential
+#from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense
+
 
 
 
 main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
-
-
-
 filelist = data.get_all_paths(main_path)
-#print(filelist)
 X, y, groups, list_subjects = data.get_all_data(filelist)
 
-#X_amplitude, X_latency,X_ampl_late, X_norm = data.other_X(X)
-
-"""#How to plot
-idx = np.where(np.array(groups) == 0)
+'''
+#How to plot
+idx = np.where(np.array(groups) == 40)
 X[idx]
 y = np.array(y)
 Xt =np.transpose(X)[idx]
@@ -38,13 +34,12 @@ AP =  Xt[idx][np.where(y[idxy]==2)[1]]
 plt.plot(np.transpose(PA), color = "blue")
 plt.plot(np.transpose(AP), color = "red")
 plt.show()
-m
-"""
+'''
 
 
-'''#print et enkelt eksempel
+#print et enkelt eksempel
 #path = "/mnt/projects/USS_MEP/COIL_ORIENTATION/x71487_coil_orient.mat"
-path = "/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X99909_ses-1_task-coilorientation_emg.mat"
+path = "/mnt/projects/USS_MEP/COIL_ORIENTATION/sub-X98504_ses-1_task-coilorientation_emg.mat"
 data1 = read_mat(path)
 if "sub" in path:
     key = list(data1.keys())[3]
@@ -57,9 +52,9 @@ X_raw, y = data.delete_frames(X_raw,y)
 print("hey")
 plt.plot(X_raw)
 plt.show()
-'''
 
-def CNN(X, y, groups):
+
+"""def CNN(X, y, groups):
     X = np.array(np.transpose(X)) #np.transpose(
     y = np.array(y)
     groups = np.array(groups)
@@ -81,21 +76,13 @@ def CNN(X, y, groups):
     kernel_size = 3
 
     model = Sequential()
-    # Add a convolution layer with filters, kernel size, and ReLU activation
     model.add(Conv1D(filters=32, kernel_size=3, activation='relu', input_shape=input_shape))
-    # Add a max pooling layer
     model.add(MaxPooling1D(pool_size=2))
-    # Add another convolution layer with filters, kernel size, and ReLU activation
     model.add(Conv1D(filters=64, kernel_size=3, activation='relu'))
-    # Add another max pooling layer
     model.add(MaxPooling1D(pool_size=2))
-    # Add a fully connected flattened layer
     model.add(Flatten())
-    # Add a fully connected layer with 128 neurons and ReLU activation
     model.add(Dense(128, activation='relu'))
-    # Add a fully connected layer with 2 neurons and softmax activation for binary classification
     model.add(Dense(1, activation='sigmoid'))
-    # Compile the model with categorical crossentropy loss and Adam optimizer
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
@@ -129,18 +116,19 @@ def CNN(X, y, groups):
             
 
     return tot_scores, tot_indi_scores, mean_indi_scores
-
+"""
 # Print the mean accuracy across all folds and subjects
 #print('Mean accuracy:', np.mean(accs))
 
 
 
 
-def barplot(X, groups, mean_indi_scores): #husk at tjek om onerow er slået til eller ej
+def barplot(groups, mean_indi_scores, acc): #husk at tjek om onerow er slået til eller ej
     fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
     axs.set_xlabel('Group number')
     axs.set_ylabel('Mean accuracy')
-    axs.set_title('Barplot of mean accuracy trained on amplitude and latency')
+    acc = acc * 100
+    axs.set_title(f'Mean accuracy pr subject, trained on X_latency, with overall mean accuracy: {acc:.2f}%')
     plt.bar(np.sort(list(set(groups))),mean_indi_scores)
     plt.show()
 
@@ -195,9 +183,9 @@ def PCA(X, explained = False, n=2, PCAs = True):# skal ind i plots
         plt.show()
 
 
-tot_scores, tot_indi_scores, mean_indi_scores = CNN(X, y, groups)
+#tot_scores, tot_indi_scores, mean_indi_scores = CNN(X, y, groups)
 
-print(np.mean(tot_scores))
+#print(np.mean(tot_scores))
 #X_amplitude, X_latency,X_ampl_late = data.other_X(X)
 #tot_scores, tot_indi_scores, mean_indi_scores = loo_logisticregression_prsubject_stratified(X_norm, y, groups, onerow = False)
 
@@ -205,8 +193,27 @@ print(np.mean(tot_scores))
 #score, X_train, X_test, y_train, y_test, predictions = models.logregr(X_train, X_test, y_train, y_test)
 #models.confmat(y_test, predictions, score)
 #print(score)
+'''
 
+main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
+filelist = data.get_all_paths(main_path)
+X, y, groups, list_subjects = data.get_all_data(filelist)
+X_amplitude, X_latency,X_ampl_late, X_diff,X_fft = data.other_X(X)
 
+X_norm = data.normalize_X(X, groups)
+#tot_scores, tot_indi_scores, mean_indi_scores = models.kfold_logisticregression_prsubject_stratified(X_norm, y, groups, onerow = False, LR = True)
+scores, mean_score = models.k10fold_logreg_generel_model(X_norm, y)
+#tot_scores_mean = np.mean(tot_scores)
+print(f"mean score: {mean_score}")
+#barplot(groups, mean_indi_scores, acc = tot_scores_mean)
+k
+"""X_amplitude, X_latency,X_ampl_late, X_norm, X_diff = data.other_X(X)
+tot_scores, tot_indi_scores, mean_indi_scores = models.kfold_logisticregression_prsubject_stratified(X_latency, y, groups, onerow = True, LR = True)
+tot_scores_mean = np.mean(tot_scores)
+#barplot(groups, mean_indi_scores, acc = tot_scores_mean)
 
+subject = 24 # set specific subject
+#plot_functions.plot_subject_coil(X,y,groups,list_subjects = list_subjects,mean=False,subject=subject)
+plot_functions.plot_subject_coil(X,y,list_subjects,groups,mean=False,subject=subject)"""
 
-
+'''

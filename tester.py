@@ -1,42 +1,53 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import data
-import plot_functions
 from pymatreader import read_mat
+import models
 
-main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
-filelist = data.get_all_paths(main_path)
-'''
-#remove the files with no signal, or little signal
-removes = ["/X96343_coil_orient.mat", 
-           "/X02035_coil_orient.mat",
-           "/sub-X76928_ses-1_task-coilorientation_emg.mat",
-           "/sub-X98504_ses-1_task-coilorientation_emg.mat"]
-'''
 
-print(filelist)
 
-'''
-#print fulllength eksempler
-path = main_path + "/sub-X99909_ses-1_task-coilorientation_emg.mat"
-data1 = read_mat(path)
-if "sub" in path:
-    key = list(data1.keys())[3]
-else:
-    key = list(data1.keys())[0]
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-X_raw = data1[key]['values'][:,0]
-y = data1[key]['frameinfo']['state']
-X_raw, y = data.delete_frames(X_raw,y)
-print("hey")
-plt.plot(X_raw)
+# Set the style for your plot using seaborn
+sns.set_style("darkgrid")
+
+# Generate some sample data for plotting (replace this with your own data)
+x = np.linspace(0, 10, 100)
+y = np.sin(x)
+
+# Create a figure and axis
+fig, ax = plt.subplots(figsize=(10, 6))
+
+# Plot the data with a line plot
+ax.plot(x, y, label='Sine curve', linewidth=2, color='blue', linestyle='-')
+
+# Set the plot title and axis labels
+ax.set_title('Professional Plot Example', fontsize=18, fontweight='bold', pad=15)
+ax.set_xlabel('X-axis Label', fontsize=14, fontweight='bold')
+ax.set_ylabel('Y-axis Label', fontsize=14, fontweight='bold')
+
+# Customize tick labels
+ax.tick_params(axis='both', labelsize=12)
+
+# Add grid lines
+ax.grid(True)
+
+# Add a legend
+ax.legend(loc='best', fontsize=12)
+
+# Remove the top and right spines
+sns.despine()
+
+
+# Show the plot
 plt.show()
 
-'''
 
-#plot different pr subject plots
-#plot_functions.plot_groups(X, groups, specifics = [5,18,19,31,32], list_subjects=list_subjects)
-#plot_functions.plot_coil(X,y,groups, mean = False, subject = None)
 
-#subject = 21 # set specific subject
-#plot_functions.plot_subject_coil(X,y,groups,mean=False,subject=subject)
+
+if __name__ == '__main__':
+    main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
+    filelist = data.get_all_paths(main_path)
+    X, y, groups, list_subjects = data.get_all_data(filelist)

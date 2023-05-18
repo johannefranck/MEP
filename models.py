@@ -11,9 +11,9 @@ from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score
 
 
-#### Logistic regression model
-def logregr(X_train, X_test, y_train, y_test):
 
+def logregr(X_train, X_test, y_train, y_test):
+  #### Logistic regression model
   from sklearn.model_selection import LeaveOneGroupOut
   from sklearn.linear_model import LogisticRegression
   from sklearn.model_selection import cross_val_score
@@ -180,8 +180,11 @@ def loo_logisticregression_prsubject(X, y, groups, onerow = False, LR = False, S
   return tot_scores, tot_indi_scores, mean_indi_scores
 
 
-def kfold_logisticregression_prsubject_stratified(X, y, groups, onerow = False, LR = True): # OBS Kfold
-  
+def kfold_logisticregression_prsubject_stratified(X, y, groups, onerow = False, LR = True):
+    """
+    Logistic Regression model doing 10-fold cross validation (stratified).
+    Trains one model pr subject
+    """
     #Checking whether it is onerow, one feature ie. if it is only apmlitude or latency
     if onerow == True:
         X = np.array(X)
@@ -231,9 +234,14 @@ def kfold_logisticregression_prsubject_stratified(X, y, groups, onerow = False, 
     plt.plot(Coefficients)
     return tot_scores, tot_indi_scores, mean_indi_scores
 
-def k10fold_logreg_generel_model(X, y, onerow =False): #normaliseret? kald Xnorm
-    # 10fold stratified cross validation for logistic regression
-    # Returns the accuracy for the 10 folds, and the mean score
+def k10fold_logreg_generel_model(X, y, onerow =False):
+    """ 
+    Logistic Regression model doing 10-fold cross validation (stratified).
+    Trains one model on all trajectories shuffled
+    To train on normalized data, input Xnorm
+    Returns the accuracy for the 10 folds, and the mean score
+    """
+
     if onerow == True:
         X = np.array(X)
     else:

@@ -32,9 +32,12 @@ def get_all_paths(main_path):
     
     # Removes xlsx files
     filelist = [ x for x in filelist if "xlsx" not in x ] 
-    #filelist = [ x for x in filelist if "71487" not in x ] #noisy signal
-    #filelist = [ x for x in filelist if "34646" not in x ] #noisy signal
-    #filelist = [ x for x in filelist if "40027" not in x ] #noisy signal
+    filelist = [ x for x in filelist if "02035" not in x ] #noisy signal    
+    filelist = [ x for x in filelist if "06188" not in x ] #no AP signal + flat top 
+    filelist = [ x for x in filelist if "91583" not in x ] #noisy signal    
+    #filelist = [ x for x in filelist if "71487" not in x ] #old noisy signal
+    #filelist = [ x for x in filelist if "34646" not in x ] #old noisy signal
+    #filelist = [ x for x in filelist if "40027" not in x ] #old noisy signal
 
     filelist = np.sort(filelist).tolist()
     return filelist
