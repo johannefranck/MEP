@@ -13,6 +13,10 @@ import os
 from scipy import signal
 import numpy_indexed as npi
 
+import torch
+import torch.nn as nn
+
+
 
 #path to all the files
 #main_path ="/mnt/projects/USS_MEP/COIL_ORIENTATION"
@@ -328,6 +332,50 @@ def normalize_X(X, groups):
 
     X_norm = normalize_by_peak_latency(X_norm_signals)
     return X_norm
+
+def datapreprocess_tensor_transformer():
+    main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
+    filelist = get_all_paths(main_path)
+    X, y, groups, list_subjects = get_all_data(filelist)
+    num_signals = X.shape[1]
+    X = np.reshape(X, (num_signals, 85, 1))
+    X = torch.from_numpy(X).float()
+    #X = X.unsqueeze(1) # Add a channel dimension # (number of signals, number of input channels, signal length)
+    y = torch.tensor(y).float()
+    # Replace these variables with your actual data and model
+    #subset_data = data[:5]
+    groups_data = groups
+    return X, y, groups_data
+
+def datapreprocess_tensor():
+    main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
+    filelist = get_all_paths(main_path)
+    X, y, groups, list_subjects = get_all_data(filelist)
+    num_signals = X.shape[1]
+    X = np.reshape(X, (num_signals, 85, 1))
+    X = torch.from_numpy(X).float()
+    #X = X.unsqueeze(1) # Add a channel dimension # (number of signals, number of input channels, signal length)
+    y = torch.tensor(y).float()
+    # Replace these variables with your actual data and model
+    #subset_data = data[:5]
+    groups_data = groups
+    return X, y, groups_data
+
+def datapreprocess_tensor_cnn():
+    main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
+    filelist = get_all_paths(main_path)
+    X, y, groups, list_subjects = get_all_data(filelist)
+    num_signals = X.shape[1]
+    #https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html
+    X = np.reshape(X, (num_signals, 1,85)) #Kristoffer
+    X = torch.from_numpy(X).float()
+    #X = X.unsqueeze(1) # Add a channel dimension # (number of signals, number of input channels, signal length)
+    y = torch.tensor(y).float()
+    # Replace these variables with your actual data and model
+    #subset_data = data[:5]
+    groups_data = groups
+    return X, y, groups_data
+
 if __name__ == "__main__":
     main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
     filelist = get_all_paths(main_path)

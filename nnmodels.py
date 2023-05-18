@@ -42,26 +42,26 @@ class CNN(nn.Module):
         self.pool2 = nn.MaxPool1d(kernel_size=2)
         self.conv3 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=5, padding=2)
         self.pool3 = nn.MaxPool1d(kernel_size=2)
-        self.fc1 = nn.Linear(in_features=64*1512, out_features=128, bias = True) #trying with bias 64*10
+        self.fc1 = nn.Linear(in_features=64*10, out_features=128, bias = True) #trying with bias 64*10
         self.dropout = nn.Dropout(p=0.5)
         self.fc2 = nn.Linear(in_features=128, out_features=1)
     def forward(self, x):
         batch_size = x.size(0)
-        print("Input shape: ", x.shape)
+        #print("Input shape: ", x.shape)
         # Convolutional layers
         x = nn.functional.relu(self.conv1(x))
         x = self.pool1(x)
-        print("After Conv1 and Pool1 shape: ", x.shape)
+        #print("After Conv1 and Pool1 shape: ", x.shape)
         x = nn.functional.relu(self.conv2(x))
         x = self.pool2(x)
-        print("After Conv2 and Pool2 shape: ", x.shape)
+        #print("After Conv2 and Pool2 shape: ", x.shape)
         x = nn.functional.relu(self.conv3(x))
         x = self.pool3(x)
-        print("After Conv3 and Pool3 shape: ", x.shape)
+        #print("After Conv3 and Pool3 shape: ", x.shape)
 
         # Flatten and fully connected layers
         x = torch.flatten(x, start_dim=1)
-        print("After Flattening shape: ", x.shape)
+        #print("After Flattening shape: ", x.shape)
         x = nn.functional.relu(self.fc1(x))
         x = self.dropout(x)
         x = self.fc2(x)

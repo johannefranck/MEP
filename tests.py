@@ -50,23 +50,14 @@ def plot_attention_heatmap(batch_attention_weights, signal, layer, head):
     plt.show()
 
 if __name__ == "__main__":
-    # Load and preprocess the data
-    main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
-    filelist = data.get_all_paths(main_path)
-    X, y, groups, list_subjects = data.get_all_data(filelist)
-    num_signals = X.shape[1]
-    X = np.reshape(X, (num_signals, 85, 1))
 
-    X = torch.from_numpy(X).float()
-    #X = X.unsqueeze(1) # Add a channel dimension # (number of signals, number of input channels, signal length)
-    y = torch.tensor(y).float()
-    # Replace these variables with your actual data and model
-    data = X
-    subset_data = data[:5]
+    X, y, groups_data = data.datapreprocess_tensor_transformer()
+    
+    dataa = X
+    subset_data = dataa[:5]
     labels = y
-    groups_data = groups
     #print data size and subset data size
-    print("data size:", data.shape)
+    print("data size:", dataa.shape)
     print("subset data size:", subset_data.shape)
 
     # Hyperparameters
@@ -76,7 +67,7 @@ if __name__ == "__main__":
     num_layers = 2
 
     # Create a random input signal of size (batch_size, seq_length, input_dim)
-    input_signal = subset_data
+    input_signal = X # (batch_size, sequence_length, num_features), where sequence_length is the length of the time series or sequence for each sample.
     # Initialize the SimpleTransformer model
     model = SimpleTransformer(input_dim, d_model, nhead, num_layers)
 
@@ -84,7 +75,16 @@ if __name__ == "__main__":
     output_probs, batch_self_attention_weights = model(input_signal)
     print("Output probabilities shape:", output_probs.shape)
     print("Output probabilities:", output_probs)
+    #change output probs to class predictions
+    class_predictions = (output_probs > 0.5).float() + 1
+    
+    #print the accuracy
+    accuracy = (class_predictions[:,0] == labels).float().sum() / len(labels)
+    print("Accuracy:", accuracy.item())
 
+
+
+    
 
     #plot_attention_heatmap(batch_self_attention_weights, signal=0, layer=0, head=0)
 
