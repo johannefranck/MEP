@@ -3,10 +3,11 @@ import torch.nn as nn
 import numpy as np
 import data
 from torch.utils.data import Dataset, DataLoader, random_split
-from nnmodels import CNN, SimpleRNN, SimpleLSTM, SimpleTransformer
+from nnmodels import CNN, SimpleRNN, SimpleLSTM
 import matplotlib.pyplot as plt
 from torch.optim.lr_scheduler import StepLR
 import plot_functions
+from tests import SimpleTransformer
 
 
 class MyDataset(Dataset):
@@ -62,15 +63,16 @@ def cross_validate(model_class, data, labels, groups, num_epochs=10, batch_size=
 
         # Create the DataLoaders
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)#fjerneer man shuffle giver det dårligere acc. 
 
         #hyperparameters
-        vocab_size = 84
-        embed_size = 128
-        num_blocks = 6
+        input_dim = 1
+        d_model = 128
+        nhead = 4
+        num_layers = 2
 
         # Initialize the model and optimizer
-        model = model_class(vocab_size, embed_size, num_blocks)
+        model = model_class(input_dim, d_model, nhead, num_layers)
         optimizer = torch.optim.Adam(model.parameters(), lr = 0.001)
         criterion = nn.BCELoss()
 
@@ -83,14 +85,12 @@ def cross_validate(model_class, data, labels, groups, num_epochs=10, batch_size=
 
             ncorrect_train = 0
             for batch_idx, (data_batch, label_batch) in enumerate(train_loader):
-                """print(f"Batch {batch_idx + 1}:")
-                print(f"Data batch shape: {data_batch.shape}")
-                print(f"Label batch shape: {label_batch.shape}")"""
+
                 #Forward pass
                 #badgesize på 16 med en dataloader
                 y_pred = model(data_batch)
                 #y_pred = model.__call__(data_batch)
-                y_pred = y_pred.squeeze()
+                y_pred = y_pred.squeeze() # take the first element of the tuple, why is it a tuple?
                 y_pred_categorical = y_pred > 0.5
                 ncorrect_train += torch.sum(label_batch == y_pred_categorical).item()
 
@@ -125,10 +125,10 @@ def cross_validate(model_class, data, labels, groups, num_epochs=10, batch_size=
 
             validation_accuracy = ncorrect / ntotal
             print(f"epoch: {epoch}, validation accuracy {validation_accuracy}")
-
-            precision = true_positives / (true_positives + false_positives)
-            recall = true_positives / (true_positives + false_negatives)
-            f1 = 2 * (precision * recall) / (precision + recall)
+            eps = 1e-11
+            precision = true_positives / (true_positives + false_positives+eps)
+            recall = true_positives / (true_positives + false_negatives+eps)
+            f1 = 2 * (precision * recall) / (precision + recall+eps)
 
             precision_results.append(precision)
             recall_results.append(recall)
@@ -147,24 +147,13 @@ def cross_validate(model_class, data, labels, groups, num_epochs=10, batch_size=
 
 
 if __name__ == "__main__":
-    # Load and preprocess the data
-    main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
-    filelist = data.get_all_paths(main_path)
-    X, y, groups, list_subjects = data.get_all_data(filelist)
-    X_norm = data.normalize_X(X, groups)
-    X = np.transpose(X)
-    X = torch.from_numpy(X).float()
-    X = X.unsqueeze(1) # Add a channel dimension # (number of signals, number of input channels, signal length)
-    y = torch.tensor(y).float()
-    # Replace these variables with your actual data and model
-    data = X
-    labels = y
-    groups_data = groups
+    X, y, groups_data = data.datapreprocess_tensor_transformer()
+    
     my_model = SimpleTransformer
 
     # Perform cross-validation
-    avg_validation_result, validation_results = cross_validate(my_model, data, labels, groups_data, num_epochs=1, batch_size=16)
+    avg_validation_result, validation_results = cross_validate(my_model, data = X, labels = y, groups = groups_data, num_epochs=1, batch_size=16)
 
-    plot_functions.barplot(groups, validation_results, acc = avg_validation_result, xtype_title = "X")
+    plot_functions.barplot(groups_data, validation_results, acc = avg_validation_result, xtype_title = "X")
 
     print("Average validation result:", avg_validation_result)
