@@ -263,5 +263,55 @@ def k10fold_logreg_generel_model(X, y, onerow =False):
     return scores, np.mean(scores)
 
 
+def kfold_svm_prsubject_stratified(X, y, groups, onerow = False):
+    """
+    SVM model doing 10-fold cross validation (stratified).
+    Trains one model pr subject
+    """
+    #Checking whether it is onerow, one feature ie. if it is only apmlitude or latency
+    if onerow == True:
+        X = np.array(X)
+    else:
+        X = np.array(np.transpose(X))
+    y = np.array(y)
+    groups = np.array(groups)
 
+    tot_scores = []
+    tot_indi_scores = []
+    Coefficients = []
+    intercepts = []
+    coef_meanssss = []
+    for subject in set(groups): #{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, ...}
+    
+        scores = []
+        
+        temp_subject = np.where(groups == subject)# the subjects index's
+        temp_subject_index_list = list(range(0,len(temp_subject[0]))) # the subjects index's in a list
+
+        #find the size of the smallest class
+        ##n_samples = min(np.bincount(y[temp_subject])[1:])
+
+        skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+
+        for train_index, test_index in skf.split(X[temp_subject[0]], y[temp_subject[0]]):
+            X_train, X_test = X[temp_subject[0]][train_index], X[temp_subject[0]][test_index]
+            y_train, y_test = y[temp_subject[0]][train_index], y[temp_subject[0]][test_index]
+        
+            # Create an SVM classifier with a linear kernel
+            svm = SVC(kernel='linear')
+
+            # Train the classifier on the training data
+            svm.fit(X_train, y_train)
+            accuracy = svm.score(X_test, y_test)
+            coef = svm.coef_ 
+            Coefficients.append(coef[0])
+            scores.append(accuracy)
+            tot_scores.extend(scores)
+        tot_indi_scores.append(scores)
+        mean = []
+        for i in tot_indi_scores:
+            mean.append(np.mean(i))
+        mean_indi_scores = mean
+    plt.plot(Coefficients)
+    return tot_scores, tot_indi_scores, mean_indi_scores
 
