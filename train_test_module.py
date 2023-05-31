@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 import data
 from torch.utils.data import Dataset, DataLoader, random_split
-from nnmodels import CNN, SimpleRNN, SimpleLSTM
+from nnmodels import CNN, SimpleRNN, SimpleLSTM, SimpleCNN
 import matplotlib.pyplot as plt
 from torch.optim.lr_scheduler import StepLR
 import plot_functions
@@ -61,6 +61,10 @@ def cv_logo(model_class, data, labels, groups, num_epochs=10, batch_size=16):
     all_y_true = []
     all_y_pred = []
 
+    # Store the training and validation accuracies for each subject
+    all_train_accuracies = []
+    all_val_accuracies = []
+
     # Iterate through the subjects, leaving one subject out at a time
     for i in range(num_subjects):
         exclude_subject = unique_subjects[i]
@@ -78,6 +82,10 @@ def cv_logo(model_class, data, labels, groups, num_epochs=10, batch_size=16):
         model = model_class()
         optimizer = torch.optim.Adam(model.parameters(), lr = 0.001)
         criterion = nn.BCELoss()
+
+        # Store the training and validation accuracies for each epoch
+        train_accuracies = []
+        val_accuracies = []
 
         # Train and evaluate the model using train_loader and val_loader
         # For each epoch, update the model and calculate validation performance
@@ -118,8 +126,11 @@ def cv_logo(model_class, data, labels, groups, num_epochs=10, batch_size=16):
                 false_positives += torch.sum((label_batch == 0) & (y_pred_categorical == 1)).item()
                 false_negatives += torch.sum((label_batch == 1) & (y_pred_categorical == 0)).item()
 
+            train_accuracy = ncorrect_train / len(train_dataset)
+            train_accuracies.append(train_accuracy)
 
             validation_accuracy = ncorrect / ntotal
+            val_accuracies.append(validation_accuracy)
             print(f"epoch: {epoch}, validation accuracy {validation_accuracy}")
 
             eps = 1e-11
@@ -147,6 +158,27 @@ def cv_logo(model_class, data, labels, groups, num_epochs=10, batch_size=16):
 
         # Store the validation results for this fold
         validation_results.append(ncorrect/len(val_dataset))
+
+        ## Plot the training and validation accuracies
+        #plt.title(f"Validation on subject {exclude_subject}")
+        #plt.plot(range(1, num_epochs + 1), train_accuracies, label='Training Accuracy')
+        #plt.plot(range(1, num_epochs + 1), val_accuracies, label='Validation Accuracy')
+        #plt.xlabel('Epoch')
+        #plt.ylabel('Accuracy')
+        #plt.legend()
+        #plt.show()
+
+        all_train_accuracies.append(train_accuracies)
+        all_val_accuracies.append(val_accuracies)
+
+    # Plot the overall mean training and validation accuracies
+    plt.title(f"Training and validation accuracies mean over all subjects")
+    plt.plot(range(1, num_epochs + 1), np.mean(all_train_accuracies, axis=0), label='Mean Training Accuracy')
+    plt.plot(range(1, num_epochs + 1), np.mean(all_val_accuracies, axis=0), label='Mean Validation Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.show()
 
     # Calculate the average validation result across all folds
     avg_validation_result = np.mean(validation_results)
@@ -223,8 +255,6 @@ def train_model_per_subject(model_class, X_train, y_train, X_test, y_test, num_e
     return validation_accuracy, precision, recall, f1
 
 
-
-
 def kfold_prsubject_stratified(X, y, groups, model_class, num_epochs=10, batch_size=16):
     """
     Models trained individually pr subject.
@@ -261,17 +291,17 @@ def kfold_prsubject_stratified(X, y, groups, model_class, num_epochs=10, batch_s
 
 
 if __name__ == "__main__":
-    X,y,groups = data.datapreprocess_tensor_cnn()
+    X,y,groups,X_norm = data.datapreprocess_tensor_cnn()
     my_model = CNN
 
     # Perform cross-validation logo
     avg_validation_result, validation_results, precision_results, recall_results, f1_results = cv_logo(my_model, data = X, labels = y, groups = groups, num_epochs=10, batch_size=16)
-    #plot_functions.barplot(groups, validation_results, acc = avg_validation_result, xtype_title = "X")
+    plot_functions.barplot(groups, validation_results, acc = avg_validation_result, xtype_title = "X")
 
-    #print("Average validation result:", avg_validation_result)
-    #print("Average precision result:", precision_results)
-    #print("Average recall result:", recall_results)
-    #print("Average validation result:", f1_results)
+    print("Average validation result:", avg_validation_result)
+    print("Average precision result:", precision_results)
+    print("Average recall result:", recall_results)
+    print("Average validation result:", f1_results)
 
     # Perform cross-validation pr subject
     #tot_scores, tot_indi_scores, mean_indi_scores = kfold_prsubject_stratified(X, y, groups, my_model, num_epochs=10, batch_size=16)

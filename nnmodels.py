@@ -43,7 +43,7 @@ class CNN(nn.Module):
         self.conv3 = nn.Conv1d(in_channels=32, out_channels=64, kernel_size=5, padding=2)
         self.pool3 = nn.MaxPool1d(kernel_size=2)
         self.fc1 = nn.Linear(in_features=64*10, out_features=128, bias = True) #trying with bias 64*10
-        self.dropout = nn.Dropout(p=0.5)
+        self.dropout = nn.Dropout(p=0.7)
         self.fc2 = nn.Linear(in_features=128, out_features=1)
     def forward(self, x):
         batch_size = x.size(0)
@@ -71,6 +71,24 @@ class CNN(nn.Module):
         #x = torch.sigmoid(x)
         x = torch.sigmoid(x).view(-1)
 
+        return x
+    
+
+class SimpleCNN(nn.Module):
+    def __init__(self):
+        super(SimpleCNN, self).__init__()
+        self.conv1 = nn.Conv1d(in_channels=1, out_channels=16, kernel_size=3)
+        self.relu = nn.ReLU()
+        self.pool = nn.MaxPool1d(kernel_size=2)
+        self.fc = nn.Linear(16 * 41, 1)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.relu(x)
+        x = self.pool(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+        x = torch.sigmoid(x).view(-1)
         return x
 
 class SimpleLSTM(nn.Module):
