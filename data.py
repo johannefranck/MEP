@@ -38,7 +38,12 @@ def get_all_paths(main_path):
     filelist = [ x for x in filelist if "xlsx" not in x ] 
     filelist = [ x for x in filelist if "02035" not in x ] #noisy signal    
     filelist = [ x for x in filelist if "06188" not in x ] #no AP signal + flat top 
-    filelist = [ x for x in filelist if "91583" not in x ] #noisy signal    
+    filelist = [ x for x in filelist if "91583" not in x ] #noisy signal
+    filelist = [ x for x in filelist if "02299" not in x ] #noisy signal
+    filelist = [ x for x in filelist if "36523" not in x ] #bumpy + flat top + med til Lasse
+    #filelist = [ x for x in filelist if "42488" not in x ] #very seperated signal (maybe not remove)
+    filelist = [ x for x in filelist if "98504" not in x ] #noisy signal
+
     #filelist = [ x for x in filelist if "71487" not in x ] #old noisy signal
     #filelist = [ x for x in filelist if "34646" not in x ] #old noisy signal
     #filelist = [ x for x in filelist if "40027" not in x ] #old noisy signal
@@ -331,12 +336,28 @@ def normalize_X(X, groups):
     X_norm_signals = np.vstack(X_norm).T
 
     X_norm = normalize_by_peak_latency(X_norm_signals)
+
+    # Pad each vector to the desired length (85) with zeros
+    # remove if wrong dimensions
+    current_length = X_norm.shape[0]
+    if current_length < 85:
+        pad_length = 85 - current_length
+        X_norm = np.pad(X_norm, pad_width=((0, pad_length), (0, 0)), mode='constant', constant_values=(0,))
+
     return X_norm
 
 def datapreprocess_tensor_transformer():
     main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
     filelist = get_all_paths(main_path)
     X, y, groups, list_subjects = get_all_data(filelist)
+
+    #leg med ap og pa
+    X = X
+  
+    #for i in range(len(y)):
+    #    if y[i] == 2:  # if label is 2 ('AP')
+    #        X[:, i] *= 10
+
     num_signals = X.shape[1]
     X = np.reshape(X, (num_signals, 85, 1))
     X = torch.from_numpy(X).float()
@@ -365,16 +386,15 @@ def datapreprocess_tensor_cnn():
     main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
     filelist = get_all_paths(main_path)
     X, y, groups, list_subjects = get_all_data(filelist)
-    num_signals = X.shape[1]
-    #https://pytorch.org/docs/stable/generated/torch.nn.Conv1d.html
-    X = np.reshape(X, (num_signals, 1,85)) #Kristoffer
+    X_norm = normalize_X(X, groups)
+    X = np.transpose(X)
     X = torch.from_numpy(X).float()
-    #X = X.unsqueeze(1) # Add a channel dimension # (number of signals, number of input channels, signal length)
+    X = X.unsqueeze(1) # Add a channel dimension # (number of signals, number of input channels, signal length)
+    X_norm = np.transpose(X_norm)
+    X_norm = torch.from_numpy(X_norm).float()
+    X_norm = X_norm.unsqueeze(1) # Add a channel dimension # (number of signals, number of input channels, signal length)
     y = torch.tensor(y).float()
-    # Replace these variables with your actual data and model
-    #subset_data = data[:5]
-    groups_data = groups
-    return X, y, groups_data
+    return X, y, groups, X_norm
 
 if __name__ == "__main__":
     main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
