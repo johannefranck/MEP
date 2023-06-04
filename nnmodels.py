@@ -73,14 +73,15 @@ class CNN(nn.Module):
 
         return x
     
-
+#original CNN model. baseline model
 class SimpleCNN(nn.Module):
     def __init__(self):
         super(SimpleCNN, self).__init__()
         self.conv1 = nn.Conv1d(in_channels=1, out_channels=16, kernel_size=3)
         self.relu = nn.ReLU()
         self.pool = nn.MaxPool1d(kernel_size=2)
-        self.fc = nn.Linear(16 * 41, 1)
+        self.fc = nn.Linear(16 * 42, 1)
+        
 
     def forward(self, x):
         x = self.conv1(x)
@@ -90,6 +91,7 @@ class SimpleCNN(nn.Module):
         x = self.fc(x)
         x = torch.sigmoid(x).view(-1)
         return x
+
 
 class SimpleLSTM(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, num_layers=1, bidirectional=False):
@@ -120,70 +122,24 @@ class SimpleLSTM(nn.Module):
         out = nn.functional.sigmoid(out)
         return out
 
-
-class SelfAttention(nn.Module):
-    def __init__(self, embed_size, attention_length=85):
-        super(SelfAttention, self).__init__()
-        self.embed_size = embed_size
-        self.attention_length = attention_length
-
-        self.query = nn.Conv1d(embed_size, embed_size, kernel_size=1)
-        self.key = nn.Conv1d(embed_size, embed_size, kernel_size=1)
-        self.value = nn.Conv1d(embed_size, embed_size, kernel_size=1)   
+"""class SimpleCNN(nn.Module):
+    def __init__(self):
+        super(SimpleCNN, self).__init__()
+        self.conv1 = nn.Conv1d(in_channels=1, out_channels=16, kernel_size=3)
+        self.relu = nn.ReLU()
+        self.pool = nn.MaxPool1d(kernel_size=2)
+        self.dropout = nn.Dropout(p=0.5)
+        self.fc = nn.Linear(16 * 42, 1)
 
     def forward(self, x):
-        Q = self.query(x)
-        K = self.key(x)
-        V = self.value(x)
-
-        attention_scores = torch.matmul(Q, K.transpose(-2, -1)) / self.embed_size**0.5
-        attention_probs = torch.softmax(attention_scores, dim=-1)[:, :, :self.attention_length]
-        out = torch.matmul(attention_probs, V)
-
-        return out
-
-
-
-
-class TransformerBlock(nn.Module):
-    def __init__(self, embed_size):
-        super(TransformerBlock, self).__init__()
-
-        self.attention = SelfAttention(embed_size)
-        self.norm1 = nn.LayerNorm(embed_size)
-        self.norm2 = nn.LayerNorm(embed_size)
-
-        self.feed_forward = nn.Sequential(
-            nn.Linear(embed_size, embed_size),
-            nn.ReLU(),
-            nn.Linear(embed_size, embed_size)
-        )
-
-    def forward(self, x):
-        attention_out = self.attention(x)
-        x = self.norm1(attention_out + x)
-        ff_out = self.feed_forward(x)
-        out = self.norm2(ff_out + x)
-
-        return out
-
-class SimpleTransformer(nn.Module):
-    def __init__(self, vocab_size, embed_size, num_blocks):
-        super(SimpleTransformer, self).__init__()
-
-        self.embedding = nn.Embedding(vocab_size, embed_size)  # Define the embedding attribute
-        self.blocks = nn.ModuleList([TransformerBlock(embed_size) for _ in range(num_blocks)])
-        self.fc = nn.Linear(embed_size, vocab_size)
-
-    def forward(self, x):
-        x = self.embedding(x.long())  # Convert the input tensor to a long integer type
-        x = x.transpose(1, 2)  # Transpose the tensor to have the channel dimension in the second place
-        for block in self.blocks:
-            x = block(x)
-        out = self.fc(x)
-
-        return out
-
+        x = self.conv1(x)
+        x = self.relu(x)
+        x = self.pool(x)
+        x = self.dropout(x)  # use dropout here
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+        x = torch.sigmoid(x).view(-1)
+        return x"""
 """# Hyperparameters
 vocab_size = 10000
 embed_size = 256

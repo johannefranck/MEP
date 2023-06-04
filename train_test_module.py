@@ -10,7 +10,11 @@ import plot_functions
 from sklearn import metrics
 from sklearn.model_selection import StratifiedKFold
 
-
+# Check for CUDA availability
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+else:
+    device = torch.device('cpu')
 
 class MyDataset(Dataset):
     def __init__(self, data, labels, groups = None, exclude_subject=None,  only_subject=None):
@@ -79,7 +83,7 @@ def cv_logo(model_class, data, labels, groups, num_epochs=10, batch_size=16):
         val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 
         # Initialize the model and optimizer
-        model = model_class()
+        model = model_class().to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr = 0.001)
         criterion = nn.BCELoss()
 
@@ -150,41 +154,27 @@ def cv_logo(model_class, data, labels, groups, num_epochs=10, batch_size=16):
             all_y_true.extend(y_true)
             all_y_pred.extend(y_pred)
 
-            ##confusion matrix pr subject
-            #if confmatprsub == True: 
-            #    y_true = val_dataset.labels.numpy()
-            #    y_pred = [1 if p > 0.5 else 0 for p in model(val_dataset.data).squeeze().detach().numpy()]
-            #    plot_functions.confmat(y_true, y_pred, f"Fold {i + 1}, validation accuracy {validation_accuracy}")
 
         # Store the validation results for this fold
         validation_results.append(ncorrect/len(val_dataset))
 
-        ## Plot the training and validation accuracies
-        #plt.title(f"Validation on subject {exclude_subject}")
-        #plt.plot(range(1, num_epochs + 1), train_accuracies, label='Training Accuracy')
-        #plt.plot(range(1, num_epochs + 1), val_accuracies, label='Validation Accuracy')
-        #plt.xlabel('Epoch')
-        #plt.ylabel('Accuracy')
-        #plt.legend()
-        #plt.show()
+ 
 
         all_train_accuracies.append(train_accuracies)
         all_val_accuracies.append(val_accuracies)
 
     # Plot the overall mean training and validation accuracies
-    plt.title(f"Training and validation accuracies mean over all subjects")
-    plt.plot(range(1, num_epochs + 1), np.mean(all_train_accuracies, axis=0), label='Mean Training Accuracy')
-    plt.plot(range(1, num_epochs + 1), np.mean(all_val_accuracies, axis=0), label='Mean Validation Accuracy')
-    plt.xlabel('Epochs')
-    plt.ylabel('Accuracy')
-    plt.legend()
-    plt.show()
+    plot_functions.plot_accuracies(all_train_accuracies, all_val_accuracies, num_epochs) #Plotting here
+    plt.savefig(f"Result_images/CNN/X/simpleCNN_val_accuracy_norm_ep:{num_epochs}.png")
+    #plt.show()
 
     # Calculate the average validation result across all folds
     avg_validation_result = np.mean(validation_results)
 
     # Plot the overall confusion matrix after the cross-validation loop
     plot_functions.confmat(np.array(all_y_true), np.array(all_y_pred), f"Overall validation accuracy {avg_validation_result*100:.2f}%")
+    plt.savefig(f"Result_images/CNN/X/simpleCNN_val_confmat_norm_ep:{num_epochs}.png")
+    #plt.show()
 
     return avg_validation_result, validation_results, precision_results, recall_results, f1_results
 
@@ -292,16 +282,28 @@ def kfold_prsubject_stratified(X, y, groups, model_class, num_epochs=10, batch_s
 
 if __name__ == "__main__":
     X,y,groups,X_norm = data.datapreprocess_tensor_cnn()
-    my_model = CNN
+    my_model = SimpleCNN
+    num_epochs = 60
 
     # Perform cross-validation logo
-    avg_validation_result, validation_results, precision_results, recall_results, f1_results = cv_logo(my_model, data = X, labels = y, groups = groups, num_epochs=10, batch_size=16)
+    avg_validation_result, validation_results, precision_results, recall_results, f1_results = cv_logo(my_model, data = X, labels = y, groups = groups, num_epochs=num_epochs, batch_size=16)
     plot_functions.barplot(groups, validation_results, acc = avg_validation_result, xtype_title = "X")
+    plt.savefig(f"Result_images/CNN/X/SimpleCNN_val_barplot_norm_ep:{num_epochs}.png")
 
-    print("Average validation result:", avg_validation_result)
-    print("Average precision result:", precision_results)
-    print("Average recall result:", recall_results)
-    print("Average validation result:", f1_results)
+    print(X.shape)
+    print(X_norm.shape)
+
+
+    #perform prsubject kfold10
+    #tot_scores, tot_indi_scores, mean_indi_scores = kfold_prsubject_stratified(X_norm, y, groups, model_class = my_model, num_epochs=num_epochs, batch_size=16)
+    #plot_functions.barplot(groups, mean_indi_scores, acc = np.mean(mean_indi_scores), xtype_title = "X")
+    #plt.savefig(f"Result_images/CNN_pr_subject/X_normalized/val_barplot_Xnorm_ep:{num_epochs}.png")
+    #plt.show()
+
+    #print("Average validation result:", avg_validation_result)
+    #print("Average precision result:", np.mean(precision_results))
+    #print("Average recall result:", np.mean(recall_results))
+    #print("Average validation result:", np.mean(f1_results))
 
     # Perform cross-validation pr subject
     #tot_scores, tot_indi_scores, mean_indi_scores = kfold_prsubject_stratified(X, y, groups, my_model, num_epochs=10, batch_size=16)
