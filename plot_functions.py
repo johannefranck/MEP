@@ -1,10 +1,11 @@
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
 import data 
 import random
 import seaborn as sns
 from sklearn import metrics
-
+colorpalette = ['#2D3748','#738CB8', '#FCA311','#BFEDC1', '#F8F8F8']
 
 def plot_groups(X, groups, list_subjects, specifics):
     # Plotting the different subject MEP signals in the same plot, with time on the x axis
@@ -70,8 +71,6 @@ def plot_coil(X,y,list_subjects,groups, mean, subject):
 
     PA = np.transpose(X[np.where(y==1)])
     AP = np.transpose(X[np.where(y==2)])
-    print(len(np.transpose(PA)))
-    print(len(np.transpose(AP)))
 
     STAA = 12.5  # sliced_time_after_artifact
     n_data_points = X.shape[1]
@@ -82,23 +81,64 @@ def plot_coil(X,y,list_subjects,groups, mean, subject):
     axs.set_xlabel('Time (ms)')
     axs.set_ylabel('mV')
     if type(subject)==int:
-        axs.set_title('MEP signals by Coil orientation, subject ' + str(list_subjects[subject]) + ', subject nr: ' + str(subject) + ', trajs: ' + str(len(y)))
+        axs.set_title('MEP by coil orientation, subject ' + str(list_subjects[subject])) #+ ', subject nr: ' + str(subject)) #+ ', trajs: ' + str(len(y)))
     # if no specific subject is specified
     else:
         axs.set_title('MEP signals by Coil orientation' + ', total PAs: ' + str(len(np.transpose(PA))) + ', total APs: ' + str(len(np.transpose(AP))))
+    complementary_colors = ["#2D3748", "#FCA311"]
 
+    if mean == True: #outcomment from here: see comment under. 
+        axs.set_title('MEP signals by Coil orientation, Mean')
+        plt.plot(time, np.mean(PA, axis = 1), color = complementary_colors[0],alpha=1)
+        plt.plot(time, np.mean(AP, axis = 1), color = complementary_colors[1],alpha=1)
+    else:
+        plt.plot(time, PA, complementary_colors[0],alpha=1)
+        plt.plot(time, AP, complementary_colors[1],alpha=1)
+
+    fig.patch.set_facecolor('#F8F8F8')
+    axs.set_facecolor('#F8F8F8')##EBEBEB
+
+    axs.legend(['PA : '+str(len(np.transpose(PA))),'AP : '+str(len(np.transpose(AP)))], loc='best', title_fontsize='large', framealpha=0.5, facecolor='white', edgecolor='black', labelcolor=[complementary_colors[0],complementary_colors[1]])
+
+    #plt.show()
+    
+    """#Outcomment this and comment above out, to plot where the maximum point is of the plot
     if mean == True:
         axs.set_title('MEP signals by Coil orientation, Mean')
-        plt.plot(time, np.mean(PA, axis = 1), color = 'blue')
-        plt.plot(time, np.mean(AP, axis = 1), color = 'red')
+        plt.plot(time, np.mean(PA, axis=1), color=complementary_colors[0], alpha=1)
+        plt.plot(time, np.mean(AP, axis=1), color=complementary_colors[1], alpha=1)
     else:
-        plt.plot(time, PA, color = 'blue')
-        plt.plot(time, AP, color = 'red')
+        plt.plot(time, PA, complementary_colors[0], alpha=1)
+        plt.plot(time, AP, complementary_colors[1], alpha=1)
 
+    fig.patch.set_facecolor('#F8F8F8')
+    axs.set_facecolor('#F8F8F8')
 
-    axs.legend(['PA : '+str(len(np.transpose(PA))),'AP : '+str(len(np.transpose(AP)))], loc='best', title_fontsize='large', framealpha=0.5, facecolor='white', edgecolor='black', labelcolor=['blue','red'])
+    axs.legend(['PA: ' + str(len(np.transpose(PA))), 'AP: ' + str(len(np.transpose(AP)))], loc='best',
+               title_fontsize='large', framealpha=0.5, facecolor='white', edgecolor='black',
+               labelcolor=[complementary_colors[0], complementary_colors[1]])
 
-    plt.show()
+    # Find the positions of the maximum points along the feature length
+    max_positions_PA = np.argmax(PA, axis=0)
+    max_positions_AP = np.argmax(AP, axis=0)
+
+    # Find the corresponding x-axis values
+    x_axis_values = time
+
+    # Plot a vertical line at the x-axis value of the maximum point for PA
+    for pos in max_positions_PA:
+        x_value = x_axis_values[pos]
+        print(x_value)
+        plt.axvline(x_value, color='blue', linestyle='--', alpha=0.5)
+
+    # Plot a vertical line at the x-axis value of the maximum point for AP
+    for pos in max_positions_AP:
+        x_value = x_axis_values[pos]
+        print(x_value)
+        plt.axvline(x_value, color='red', linestyle='--', alpha=0.5)
+
+    plt.show()"""
+
 
 
 def plot_subject_coil(X,y,list_subjects,groups,mean,subject):
@@ -115,24 +155,69 @@ def plot_subject_coil(X,y,list_subjects,groups,mean,subject):
     plot_coil(np.transpose(Xi),yi,list_subjects,groups,mean,subject)
 
 
-def barplot(groups, mean_indi_scores, acc, xtype_title): #husk at tjek om onerow er slået til eller ej
+def barplot(groups, mean_indi_scores, acc, xtype_title):
     sns.set_style("white")
     fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
+    
+    fig.patch.set_facecolor('#F8F8F8')   # Set the background color for the figure
+    axs.set_facecolor('#F8F8F8')          # Set the background color for the axes
+    
     axs.set_xlabel('Group number')
     axs.set_ylabel('Mean accuracy')
     acc = acc * 100
-    if xtype_title == 'X':
-        axs.set_title(f'Mean accuracy pr subject, with overall mean accuracy: {acc:.2f}% \n X')
-    elif xtype_title == 'X_norm':
-        axs.set_title(f'Mean accuracy pr subject, with overall mean accuracy: {acc:.2f}% \n X normalized')
-    elif xtype_title == 'X_amplitude':
-        axs.set_title(f'Mean accuracy pr subject, with overall mean accuracy: {acc:.2f}% \n Amplitude normalized')
-    elif xtype_title == 'X_latency':
-        axs.set_title(f'Mean accuracy pr subject, with overall mean accuracy: {acc:.2f}% \n Latency normalized')
-    elif xtype_title == 'X_ampl_late':
-        axs.set_title(f'Mean accuracy pr subject, with overall mean accuracy: {acc:.2f}% \n Only Amplitude and Latency')
-    plt.bar(np.sort(list(set(groups))),mean_indi_scores)
-    plt.show()
+
+    # Use the colorpalette for bar color
+    title_switch = {'X': 'X', 'X_norm': 'X normalized', 'X_amplitude': 'Amplitude normalized', 'X_latency': 'Latency normalized', 'X_ampl_late': 'Only Amplitude and Latency'}
+
+    axs.set_title(f'Mean accuracy per subject, with overall mean accuracy: {acc:.2f}% \n {title_switch[xtype_title]}')
+
+    plt.bar(np.sort(list(set(groups))), mean_indi_scores, color='#738CB8')
+    
+
+def plot_accuracies(all_train_accuracies, all_val_accuracies, num_epochs):
+    colorpalette = ['#2D3748','#738CB8', '#FCA311','#BFEDC1', '#F8F8F8']
+    sns.set_style("white")
+    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(8, 4))
+
+    fig.patch.set_facecolor('#F8F8F8')  # Set the background color for the figure
+    axs.set_facecolor('#F8F8F8')  # Set the background color for the axes
+
+    axs.set_title(f"Training and validation accuracies mean over all subjects")
+    axs.plot(range(1, num_epochs + 1), np.mean(all_train_accuracies, axis=0), label='Mean Training Accuracy', color=colorpalette[0])  # Using first color in palette
+    axs.plot(range(1, num_epochs + 1), np.mean(all_val_accuracies, axis=0), label='Mean Validation Accuracy', color=colorpalette[1])  # Using second color in palette
+    axs.set_xlabel('Epochs')
+    axs.set_ylabel('Accuracy')
+    axs.legend()
+
+    
+
+def barplotmix(groups, mean_indi_scores_X, mean_indi_scores_X_norm, acc_x, acc_xnorm, xtype_title):
+    colorpalette = ['#2D3748','#738CB8', '#FCA311','#BFEDC1', '#F8F8F8']
+    sns.set_style("white")
+    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(15, 5)) # increase plot size
+    
+    sorted_groups = np.sort(list(set(groups)))
+    bar_width = 0.35 # specify the width of the bars
+    
+    # Subtract and add half the bar width to the x-values
+    rects1 = axs.bar(sorted_groups - bar_width/2, mean_indi_scores_X, bar_width, alpha=0.5, color=colorpalette[0], label=f'X amplitude: {acc_x:.2f}%')
+    rects2 = axs.bar(sorted_groups + bar_width/2, mean_indi_scores_X_norm, bar_width, alpha=0.5, color=colorpalette[1], label=f'X latency: {acc_xnorm:.2f}%')
+
+    axs.set_xlabel('Subject number')
+    axs.set_ylabel('Mean accuracy')
+    
+    if xtype_title in ['X and X normalized', 'X_norm', 'X_amplitude', 'X_latency', 'X amplitude and X latency']:
+        axs.set_title(f'Mean accuracy pr subject\n {xtype_title}')
+
+    # Move the legend to an empty space
+    plt.legend(loc='lower left')
+    # Set the background color to grey (#F8F8F8)
+    axs.set_facecolor(colorpalette[-1])
+    fig.set_facecolor(colorpalette[-1])
+
+    #plt.savefig('barplot_mean_accuracy_pr_subject_Xampl_Xlat.png', dpi=300)
+
+    #plt.show()#barplot_mean_accuracy_pr_subject_Xampl_Xlat
 
 
 def PCA(X, explained = False, n=2, PCAs = True):# skal ind i plots
@@ -185,7 +270,7 @@ def PCA(X, explained = False, n=2, PCAs = True):# skal ind i plots
         # Show the plot
         plt.show()
 
-def confmat(y_test, predictions, title):
+"""def confmat(y_test, predictions, title):
     cm = metrics.confusion_matrix(y_test, predictions)
     print(cm)  
 
@@ -206,18 +291,64 @@ def confmat(y_test, predictions, title):
         horizontalalignment='center',
         verticalalignment='center')
     plt.show()
+"""
+def confmat(y_test, predictions, title):
+    cm = metrics.confusion_matrix(y_test, predictions)
+    print(cm)
+
+    color_palette = ['#425B87', '#4056A1', '#648EC0', '#8BB5E0', '#F1F1F1', '#FFFADE', '#FFEBA2', '#FFD775', '#FFC947', '#FCA311']
+    cmap = LinearSegmentedColormap.from_list('custom_cmap', color_palette)
+
+    plt.figure(figsize=(10, 10))
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title("Confusion matrix", size=15)
+    plt.colorbar()
+    plt.gca().set_facecolor('#F8F8F8')  # Set the background color
+    tick_marks = np.arange(2)
+    plt.xticks(tick_marks, ["PA: 1", "AP: 2"], rotation=45, size=10)
+    plt.yticks(tick_marks, ["PA: 1", "AP: 2"], size=10)
+    plt.tight_layout()
+    plt.ylabel('Actual label', size=15)
+    plt.xlabel('Predicted label', size=15)
+    width, height = cm.shape
+    for x in range(width):
+        for y in range(height):
+            plt.annotate(str(cm[x][y]), xy=(y, x),
+                         horizontalalignment='center',
+                         verticalalignment='center')
+    
+
 
 if __name__ == "__main__":
-
+    import models
     main_path = "/mnt/projects/USS_MEP/COIL_ORIENTATION"
     filelist = data.get_all_paths(main_path)
     X, y, groups, list_subjects = data.get_all_data(filelist)
+    X_norm = data.normalize_X(X, groups)
+    X_amplitude, X_latency,X_ampl_late, X_diff,X_fft = data.other_X(X)
+    """kfold cv
+    # 10-fold stratified cross validation PR SUBJECT
+    tot_scores_x, tot_indi_scores, mean_indi_scores_X, all_subject_coefficients = models.kfold_logisticregression_prsubject_stratified(X_amplitude, y, groups, onerow = True)
+    # 10-fold stratified cross validation PR SUBJECT on X normalized
+    tot_scores_xnorm, tot_indi_scores, mean_indi_scores_X_norm, all_subject_coefficients = models.kfold_logisticregression_prsubject_stratified(X_latency, y, groups, onerow = True)
+    barplotmix(groups, mean_indi_scores_X, mean_indi_scores_X_norm, acc_x = np.mean(tot_scores_x), acc_xnorm = np.mean(tot_scores_xnorm), xtype_title = 'X amplitude and X latency')"""
 
+    scores, mean_score_X, coefficients = models.logo_logreg_model(X_amplitude, y, groups, onerow =True)
+    scores_Xnorm, mean_score_Xnorm, coefficients = models.logo_logreg_model(X_latency, y, groups, onerow =True)
+    barplotmix(groups, scores, scores_Xnorm, acc_x = np.mean(mean_score_X), acc_xnorm = np.mean(mean_score_Xnorm), xtype_title = 'X amplitude and X latency')
+
+    plt.savefig('barplot_mean_accuracy_LOGOCV_Xamplitude_Xlatency.png', dpi=300)
+    
     #what do you want to plot?
     #plot_groups(X, groups, list_subjects=list_subjects, specifics = [5,18,19,31,32])
     #plot_coil(X,y, list_subjects, groups, mean = True, subject = None)
-
-    for i in range(7,15):
-        subject = i # set specific subject
-        plot_subject_coil(X,y,list_subjects,groups,mean=False,subject=subject)
+    #plot_subject_coil(X,y,list_subjects,groups,mean=False,subject=7)
+    #plot_coil(X,y,list_subjects,groups, mean, subject)
+    #for i in range(0,44):
+    #    subject = i # set specific subject
+    #    plot_subject_coil(X,y,list_subjects,groups,mean=False,subject=subject)
+    #    plt.savefig(f'BaselineModel_Plots/MEPSubject{i}.png', dpi=100, bbox_inches='tight')
+        #plt.show()
+        #plt.close(fig)
+        
 
